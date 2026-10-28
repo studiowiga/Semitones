@@ -278,9 +278,9 @@ out_rgb = np.clip(np.where(out_a[..., None] > 1e-4, out_rgb / np.maximum(out_a[.
 to_img(np.concatenate([out_rgb, out_a[..., None]], -1)[by_:by_ + 2 * box_r, bx_:bx_ + 2 * box_r]).save(os.path.join(OUT, 'ring_lit.png'), optimize=True)
 sprites['ring_lit'] = sprites['ringlight']
 
-# rotating comet: bright head + decaying tail, drawn rotated around the ring
-# centre by the editor (square sprite centred on the ring centre)
-half = int(np.ceil((R + RW + 40 * HIDPI)))
+# rotating light: no steady ring, a soft glowing head with a long blurred
+# trail and a wide halo, drawn rotated around the ring centre by the editor
+half = int(np.ceil(R + RW + 70 * HIDPI))
 cxi, cyi = FC
 cs = 2 * half
 yy2, xx2 = np.mgrid[0:cs, 0:cs].astype(np.float32)
@@ -288,20 +288,30 @@ ddx, ddy = xx2 - half, yy2 - half          # sprite centred exactly on the ring 
 d2 = np.sqrt(ddx * ddx + ddy * ddy)
 ang = np.arctan2(ddy, ddx)                  # y down: increasing angle = clockwise
 phi = np.mod(0.0 - ang, 2 * np.pi)          # angle behind the head (head at angle 0)
-prof = np.exp(-phi / 1.0) * np.clip((2 * np.pi - phi) / 0.12, 0, 1)
+prof = np.exp(-phi / 1.7) * np.clip(1 - phi / (1.55 * np.pi), 0, 1) ** 1.6   # long trail fading out, rest of the ring off
+head = np.exp(-(phi / 0.38) ** 2) + np.exp(-((2 * np.pi - phi) / 0.14) ** 2) * 0.8
 band2 = np.clip(RW / 2 - np.abs(d2 - R) + 0.6, 0, 1)
-relc2 = 1 - np.clip(np.abs(d2 - R) / (RW / 2), 0, 1)
-head = np.exp(-(phi / 0.30) ** 2)
-plin = (COL[None, None, :] * (0.85 + 0.3 * (1 - relc2))[..., None] * prof[..., None] * 2.6 +
-        CORE[None, None, :] * (relc2 ** 1.1 * (1.2 * prof + 2.6 * head))[..., None])
-ps = lin2srgb(plin)
-glow = (gblur(band2 * prof, 2.0 * HIDPI) * 2.2 + gblur(band2 * prof, 7 * HIDPI) * 1.8 +
-        gblur(band2 * prof, 16 * HIDPI) * 1.2 + gblur(band2 * head, 12 * HIDPI) * 3.0)
-ga = np.clip(glow * (1 - band2), 0, 1)
-pa = np.clip(band2 * np.clip(prof * 1.3 + head, 0, 1), 0, 1)
-crgb = ps * pa[..., None] + lin2srgb(COL * 1.6 + CORE * 0.6 * np.clip(head, 0, 1)[..., None])[...] * ga[..., None]
-ca = np.clip(pa + ga, 0, 1)
-crgb = np.clip(np.where(ca[..., None] > 1e-4, crgb / np.maximum(ca[..., None], 1e-4), 0), 0, 1)
+src_ = band2 * np.clip(prof + 0.8 * head, 0, 1.6)
+
+
+def nblur(a, sg):
+    # blur normalised so a full lit ring keeps its level whatever the radius
+    return gblur(a, sg) / (gblur(band2, sg).max() + 1e-6)
+
+
+core = nblur(src_, 1.8 * HIDPI)                                         # soft light pipe
+halo = (nblur(src_, 5 * HIDPI) * 0.85 + nblur(src_, 12 * HIDPI) * 0.65 +
+        nblur(src_, 24 * HIDPI) * 0.45 + nblur(band2 * head, 16 * HIDPI) * 0.6)
+hot = nblur(band2 * head, 2.2 * HIDPI)                                 # whiter head
+blue_s = lin2srgb(COL * 1.15)                                           # glow colour (display blue)
+pipe_s = lin2srgb(COL * 1.6 + CORE * 0.35)
+hot_s = lin2srgb(CORE * 1.6)
+wc, wh, wt = np.clip(core * 1.05, 0, 1), np.clip(halo * 0.80, 0, 0.92), np.clip(hot * 0.9, 0, 1)
+ca = np.clip(1 - (1 - wc) * (1 - wh), 0, 1)
+crgb = (pipe_s[None, None, :] * wc[..., None] + blue_s[None, None, :] * (wh * (1 - wc))[..., None])
+crgb = crgb / np.maximum(ca[..., None], 1e-4)
+crgb = crgb * (1 - wt[..., None]) + hot_s[None, None, :] * wt[..., None]
+crgb = np.clip(crgb, 0, 1)
 to_img(np.concatenate([crgb, ca[..., None]], -1)).save(os.path.join(OUT, 'ring_comet.png'), optimize=True)
 sprites['ring_comet'] = ((cxi - half) / HIDPI, (cyi - half) / HIDPI, cs / HIDPI, cs / HIDPI)
 
