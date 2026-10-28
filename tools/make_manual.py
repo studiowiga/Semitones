@@ -204,25 +204,25 @@ def part(lang):
     rows = [[T('No.', 'N°'), T('Control', 'Commande'), T('Function', 'Fonction')]]
     rows += [
         ['1', T('Display', 'Afficheur'), T('Pitch change in semitones (-12 ... +12). In mix adjust mode it shows the mix in % (0 ... 100). '
-             'Blue dot-matrix display; a blue dash above MIX lights up when MIX mode is on. Drag up/down or scroll over it to change the value.',
+             'Blue dot-matrix display; a blue dot above MIX lights up when MIX mode is on. Drag up/down or scroll over it to change the value.',
              'Transposition en demi-tons (-12 ... +12). En réglage du mix, il affiche le mix en % (0 ... 100). Afficheur bleu '
-             'à matrice de points ; un trait bleu s\'allume au-dessus de MIX quand le mode MIX est actif. Glisser vers le haut / bas ou molette dessus pour changer la valeur.')],
+             'à matrice de points ; un point bleu s\'allume au-dessus de MIX quand le mode MIX est actif. Glisser vers le haut / bas ou molette dessus pour changer la valeur.')],
         ['2', T('Left arrow', 'Flèche gauche'), T('-1 semitone (hold to repeat). In mix adjust mode: lowers the mix.',
              '-1 demi-ton (maintenir pour répéter). En réglage du mix : baisse le mix.')],
         ['3', T('Right arrow', 'Flèche droite'), T('+1 semitone (hold to repeat). In mix adjust mode: raises the mix.',
              '+1 demi-ton (maintenir pour répéter). En réglage du mix : monte le mix.')],
-        ['4', 'MIX', T('Click: MIX mode on / off. Hold (0.6 s): mix adjust mode, the light ring and the MIX dash flash, the arrows set the '
+        ['4', 'MIX', T('Click: MIX mode on / off. Hold (0.6 s): mix adjust mode, the light ring and the MIX dot flash, the arrows set the '
              'mix 0 ... 100 %; click MIX again or wait 4 s to leave.',
-             'Clic : mode MIX marche / arrêt. Maintien (0,6 s) : réglage du mix, l\'anneau lumineux et le trait MIX clignotent, les flèches '
+             'Clic : mode MIX marche / arrêt. Maintien (0,6 s) : réglage du mix, l\'anneau lumineux et le point MIX clignotent, les flèches '
              'règlent le mix de 0 à 100 % ; recliquez sur MIX ou attendez 4 s pour sortir.')],
         ['5', 'FAV', T('Click: recall / leave the FAV setting. Hold (0.9 s): saves the current sound (pitch, MIX mode, mix) as FAV '
              '(the display blinks) and engages it.',
              'Clic : rappelle / quitte le réglage FAV. Maintien (0,9 s) : mémorise le son actuel (transposition, mode MIX, mix) '
              'comme FAV (l\'afficheur clignote) et l\'active.')],
         ['6', T('Light ring', 'Anneau lumineux'), T('Blue ring around the footswitch (colour of the display) with a bright light and a long glowing trail turning around it: lit = effect on, off = bypass, '
-             'flashing = mix adjust. MIX: blue dash in the display; MIX and FAV states also on the status line.',
+             'flashing = mix adjust. MIX: blue dot in the display; MIX and FAV states also on the status line.',
              'Anneau bleu autour du footswitch (couleur de l\'afficheur) avec une lumière à longue traînée lumineuse qui tourne : allumé = effet actif, éteint = bypass, clignotant = réglage '
-             'du mix. MIX : trait bleu dans l\'afficheur ; états MIX et FAV aussi sur la ligne d\'état.')],
+             'du mix. MIX : point bleu dans l\'afficheur ; états MIX et FAV aussi sur la ligne d\'état.')],
         ['7', T('Footswitch', 'Footswitch'), T('Effect on / bypass (buffered bypass, click-free). Toggles as soon as it is pressed.',
              'Effet actif / bypass (bypass bufférisé, sans clic). Bascule dès l\'appui.')],
         ['8', T('Preset menu', 'Menu des presets'), T('On the pedal, above the display: factory presets (section 6) grouped by use. Shows "Custom" when the sound matches none of them.',

@@ -16,7 +16,16 @@ PRESET_BOX = (262.0, 93.0, 552.0, 131.0)    # source px: preset menu on the peda
 DEFAULT_W, DEFAULT_H = 391, 493              # default (= minimum) window size
 STATUS_PILL = (231.0, 988.0, 586.0, 1017.0)  # source px: original status pill (erased)
 STATUS_BIG = (196.0, 980.0, 620.0, 1018.0)   # source px: bigger status pill drawn in its place
-MIX_DASH = (283.0, 321.0, 383.0)             # x1, x2, y: MIX indicator dash, above the MIX button
+MIX_DOT = (302.0, 383.0, 7.5)                # x, y, r: MIX indicator dot, above the MIX button
+
+# ------------------------------------------------------- relight (light from the left)
+PLATE = (142.0, 65.0, 673.0, 977.0)           # pedal plate edges in the source
+PLATE_CX = 407.5                              # vertical mirror axis of the plate
+SCREWS = [(174.2, 99.0), (635.0, 96.6), (175.4, 939.0), (637.4, 939.0)]
+SCREW_R = 27.0
+FOOT_MIRROR = (407.0, 825.0, 106.0)           # footswitch centre / radius for the local mirror
+JACK_L = (100.0, 456.0, 142.0, 574.0)         # left jack box (x0, y0, x1, y1)
+JACK_R = (673.0, 456.0, 715.0, 574.0)         # right jack box
 
 # --------------------------------------------------------------- controls
 MIX_BTN = (301.8, 455.4, 25.0)
