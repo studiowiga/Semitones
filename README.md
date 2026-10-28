@@ -1,0 +1,39 @@
+# Semitones (Studio Wiga)
+
+Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 à +12 demi-tons à très faible latence (« capodastre numérique »), mode **MIX** (signal transposé + signal direct, 0 à 100 %) et mémoire **FAV**. Format pédale simple, Windows et macOS.
+
+![Semitones](docs/screenshot.png)
+
+- Notice EN / FR : `docs/Semitones_Manual_EN-FR_v1.0.0.pdf`
+- Builds prêts à installer : onglet **Actions** > dernier run > artefacts `Semitones-VST3-Windows` / `Semitones-VST3-macOS`
+
+## Fonctionnement (comme la pédale)
+
+| Commande | Clic | Maintien |
+|---|---|---|
+| ◀ / ▶ | -1 / +1 demi-ton (répétition si maintenu) | — |
+| MIX | mode MIX marche / arrêt | 0,6 s : réglage du mix aux flèches (LED et point MIX clignotent) |
+| FAV | rappel / sortie de la mémoire FAV | 0,9 s : mémorise le son actuel comme FAV |
+| Footswitch | effet / bypass (bascule à l'appui) | — |
+
+LED : rouge = transposition 100 %, bleue = mode MIX, verte = FAV, éteinte = bypass. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 760 x 958 = minimum, 125 %, 150 %).
+
+## Moteur audio
+
+`PitchShifter.h` (indépendant de JUCE) : transposition temporelle à raccords synchronisés sur la période (corrélation normalisée, recherche grossière décimée puis fine avec interpolation), suivi de hauteur YIN jusqu'à ~31 Hz (7/8 cordes, basse), retour sur l'audio le plus récent à chaque attaque, fondus dépendant de la corrélation, adaptation automatique aux accords, anti-repliement pour les transpositions vers le haut. Retard mesuré : ~2 ms (aigus) à 6-10 ms (cordes graves), aucune latence déclarée à l'hôte. Tests : `tools/dsp_test.cpp`.
+
+## Anti-gel v2
+
+JUCE 8.0.15, `setOpaque`, rendu logiciel forcé sous Windows (réappliqué si le peer change), aucun calcul lourd dans `paint()`, caches reconstruits par le timer seulement, chien de garde de redessin (1,5 s), timer 30 Hz avec redessin des seules zones modifiées, jamais de `setSize` dans `resized()`, aucun appel à l'hôte depuis le thread audio (file vidée par un timer 60 Hz), paramètres lus par pointeurs atomiques.
+
+## Construire
+
+```
+cmake -B build && cmake --build build --config Release --target Semitones_VST3
+```
+
+Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depuis `design/source_photo.png`). Notice : `python3 -I tools/make_manual.py`. Outil Linux de captures + tests audio : `-DSEMITONES_BUILD_RENDER=ON`, cible `SemitonesRender`.
+
+## Historique
+
+- **1.0.0** — première version : visuel identique à la CHUG Capo + logo Studio Wiga noir, moteur faible latence, MIX, FAV, presets d'usine, MIDI learn, anti-gel v2.

@@ -1,0 +1,7 @@
+build/
+out/
+*.user
+.DS_Store
+design/clean_preview.png
+design/background_preview.png
+__pycache__/

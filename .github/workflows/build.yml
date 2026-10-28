@@ -1,0 +1,47 @@
+name: Build Semitones VST3
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+      - name: Build
+        run: cmake --build build --config Release --target Semitones_VST3 --parallel
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          Copy-Item -Recurse "build/Semitones_artefacts/Release/VST3/Semitones.vst3" "out/Semitones.vst3"
+          if (Test-Path docs) { Copy-Item -Recurse docs out/docs }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Semitones-VST3-Windows
+          path: out
+
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure
+        run: cmake -B build -G Xcode
+      - name: Build
+        run: cmake --build build --config Release --target Semitones_VST3 -- -quiet
+      - name: Package
+        run: |
+          mkdir -p out
+          cp -R "build/Semitones_artefacts/Release/VST3/Semitones.vst3" out/
+          codesign --force --deep --sign - out/Semitones.vst3 || true
+          [ -d docs ] && cp -R docs out/docs || true
+          cd out && zip -qry ../Semitones-VST3-macOS.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Semitones-VST3-macOS
+          path: Semitones-VST3-macOS.zip

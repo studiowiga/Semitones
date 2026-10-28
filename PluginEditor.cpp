@@ -1,0 +1,688 @@
+#include "PluginEditor.h"
+#include "BinaryData.h"
+
+namespace
+{
+    double nowMs() { return juce::Time::getMillisecondCounterHiRes(); }
+
+    const juce::Colour kInk     { 0xffd9dadc };
+    const juce::Colour kInkDim  { 0xff8d8f94 };
+    const juce::Colour kAccent  { 0xff39a0ff };    // display blue
+    const juce::Colour kBar     { 0xff141416 };
+
+    juce::Image loadPng (const char* resource)
+    {
+        int size = 0;
+        if (auto* data = BinaryData::getNamedResource (resource, size))
+            return juce::ImageCache::getFromMemory (data, size);
+        return {};
+    }
+
+    constexpr const char* kDigits[10] = { "abcdef", "bc", "abdeg", "abcdg", "bcfg", "acdfg", "acdefg", "abc", "abcdefg", "abcdfg" };
+    constexpr float kMixHoldMs = 600.0f, kFavHoldMs = 900.0f;
+}
+
+// ============================================================================
+// Look and feel (preset menu / pop-up menus)
+SemitonesLook::SemitonesLook()
+{
+    setColour (juce::PopupMenu::backgroundColourId, juce::Colour (0xff1b1c1f));
+    setColour (juce::PopupMenu::textColourId, kInk);
+    setColour (juce::PopupMenu::highlightedBackgroundColourId, juce::Colour (0xff23415f));
+    setColour (juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
+    setColour (juce::ComboBox::textColourId, kInk);
+    setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xff1c1d20));
+    setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff34363b));
+    setColour (juce::ComboBox::arrowColourId, kInkDim);
+}
+
+juce::Font SemitonesLook::uiFont (float h) const
+{
+    if (face != nullptr) return juce::Font (juce::FontOptions (face).withHeight (h));
+    return juce::Font (juce::FontOptions (h));
+}
+
+void SemitonesLook::drawComboBox (juce::Graphics& g, int w, int h, bool down, int, int, int, int, juce::ComboBox& box)
+{
+    auto r = juce::Rectangle<float> (0.5f, 0.5f, (float) w - 1.0f, (float) h - 1.0f);
+    const float rad = r.getHeight() * 0.5f;
+    juce::ColourGradient grad (juce::Colour (0xff26272b), 0, 0, juce::Colour (0xff17181a), 0, (float) h, false);
+    g.setGradientFill (grad);
+    g.fillRoundedRectangle (r, rad);
+    g.setColour (box.isMouseOver (true) || down ? juce::Colour (0xff4a6f96) : juce::Colour (0xff36383d));
+    g.drawRoundedRectangle (r, rad, 1.0f);
+    // chevron
+    const float cx = (float) w - rad - 4.0f, cy = (float) h * 0.5f;
+    juce::Path p;
+    p.startNewSubPath (cx - 4.0f, cy - 2.0f);
+    p.lineTo (cx, cy + 2.5f);
+    p.lineTo (cx + 4.0f, cy - 2.0f);
+    g.setColour (kInkDim);
+    g.strokePath (p, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
+juce::Font SemitonesLook::getComboBoxFont (juce::ComboBox& b) { return uiFont (juce::jmin (14.0f, (float) b.getHeight() * 0.52f)); }
+
+void SemitonesLook::positionComboBoxText (juce::ComboBox& box, juce::Label& label)
+{
+    label.setBounds (14, 1, box.getWidth() - 40, box.getHeight() - 2);
+    label.setFont (getComboBoxFont (box));
+    label.setJustificationType (juce::Justification::centred);
+}
+
+juce::Font SemitonesLook::getPopupMenuFont() { return uiFont (15.0f); }
+
+void SemitonesLook::drawPopupMenuBackground (juce::Graphics& g, int w, int h)
+{
+    g.fillAll (findColour (juce::PopupMenu::backgroundColourId));
+    g.setColour (juce::Colour (0xff34363b));
+    g.drawRect (0, 0, w, h);
+}
+
+void SemitonesLook::drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle<int>& area, bool isSeparator, bool isActive,
+                                       bool isHighlighted, bool isTicked, bool hasSubMenu, const juce::String& text,
+                                       const juce::String& shortcut, const juce::Drawable* icon, const juce::Colour* tc)
+{
+    if (isSeparator)
+    {
+        g.setColour (juce::Colour (0xff34363b));
+        g.fillRect (area.reduced (8, 0).withHeight (1).withY (area.getCentreY()));
+        return;
+    }
+    LookAndFeel_V4::drawPopupMenuItem (g, area, false, isActive, isHighlighted, isTicked, hasSubMenu, text, shortcut, icon, tc);
+}
+
+void SemitonesLook::drawPopupMenuSectionHeader (juce::Graphics& g, const juce::Rectangle<int>& area, const juce::String& name)
+{
+    g.setFont (uiFont (12.5f));
+    g.setColour (kAccent.withAlpha (0.9f));
+    g.drawFittedText (name.toUpperCase(), area.reduced (12, 0).withTrimmedTop (4), juce::Justification::bottomLeft, 1);
+}
+
+// ============================================================================
+SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
+    : AudioProcessorEditor (p), proc (p)
+{
+    setOpaque (true);
+    face = juce::Typeface::createSystemTypefaceFor (BinaryData::PoppinsMedium_ttf, BinaryData::PoppinsMedium_ttfSize);
+    look.setTypeface (face);
+    setLookAndFeel (&look);
+
+    bgImage = loadPng ("background_jpg");
+    for (const auto& s : Layout::sprites)
+    {
+        Sprite sp;
+        sp.img = loadPng ((juce::String (s.name) + "_png").toRawUTF8());
+        sp.r = { s.r.x, s.r.y, s.r.w, s.r.h };
+        sprites[s.name] = sp;
+    }
+    for (auto n : { "s_l", "s_r", "s_u", "s_d" }) segNames.push_back (std::string ("seg_") + n);
+    for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_t_") + c);
+    for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_u_") + c);
+    segNames.push_back ("dot_mix");
+    segNames.push_back ("dot_fav");
+
+    // preset menu
+    const auto& presets = SemitonesProcessor::factoryPresets();
+    for (int i = 0; i < (int) presets.size(); ++i)
+        presetBox.addItem (presets[(size_t) i].name, i + 1);
+    presetBox.setTextWhenNothingSelected ("Custom");
+    presetBox.onChange = [this]
+    {
+        const int id = presetBox.getSelectedId();
+        if (id > 0) proc.applyPreset (id - 1);
+    };
+    addAndMakeVisible (presetBox);
+    syncPresetBox();
+
+    setResizable (true, true);
+    setResizeLimits ((int) Layout::W, (int) Layout::H, (int) Layout::W * 2, (int) Layout::H * 2);
+    if (auto* c = getConstrainer())
+        c->setFixedAspectRatio (Layout::W / Layout::H);
+    setSize ((int) Layout::W, (int) Layout::H);
+
+    const auto e = proc.getEffective();
+    const int col = e.fav ? 2 : (e.mixOn ? 1 : 0);
+    if (e.on) led[col] = 1.0f;
+    segMask = computeSegments();
+    startTimerHz (30);
+}
+
+SemitonesEditor::~SemitonesEditor()
+{
+    stopTimer();
+    setLookAndFeel (nullptr);
+}
+
+// ---------------------------------------------------------------- helpers
+juce::Rectangle<int> SemitonesEditor::toScreen (juce::Rectangle<float> r, float grow) const
+{
+    const float s = scale();
+    return (r * s).expanded (grow * s).getSmallestIntegerContainer();
+}
+
+const SemitonesEditor::Sprite* SemitonesEditor::sprite (const std::string& name) const
+{
+    auto it = sprites.find (name);
+    return it == sprites.end() ? nullptr : &it->second;
+}
+
+void SemitonesEditor::drawSprite (juce::Graphics& g, const std::string& name, float opacity) const
+{
+    if (opacity <= 0.002f) return;
+    if (auto* sp = sprite (name))
+    {
+        if (! sp->img.isValid()) return;
+        g.setOpacity (juce::jlimit (0.0f, 1.0f, opacity));
+        g.drawImage (sp->img, sp->r * scale(), juce::RectanglePlacement::stretchToFit);
+    }
+}
+
+SemitonesEditor::Hit SemitonesEditor::hitTest (juce::Point<float> p) const
+{
+    auto inCircle = [&] (float x, float y, float r) { return p.getDistanceFrom ({ x, y }) <= r; };
+    auto inRect = [&] (const Layout::R& r) { return juce::Rectangle<float> (r.x, r.y, r.w, r.h).contains (p); };
+    if (inCircle (Layout::footX, Layout::footY, Layout::footR)) return Hit::foot;
+    if (inCircle (Layout::mixX, Layout::mixY, Layout::mixR)) return Hit::mix;
+    if (inCircle (Layout::favX, Layout::favY, Layout::favR)) return Hit::fav;
+    if (inRect (Layout::hitLeft)) return Hit::left;
+    if (inRect (Layout::hitRight)) return Hit::right;
+    if (inRect (Layout::hitDisplay)) return Hit::display;
+    if (inCircle (Layout::ledX, Layout::ledY, Layout::ledR + 6)) return Hit::led;
+    return Hit::background;
+}
+
+uint32_t SemitonesEditor::computeSegments() const
+{
+    const auto e = proc.getEffective();
+    const double t = nowMs();
+    uint32_t m = 0;
+    auto set = [&] (const std::string& n)
+    {
+        for (size_t i = 0; i < segNames.size(); ++i)
+            if (segNames[i] == n) { m |= (1u << i); return; }
+    };
+    auto digit = [&] (char pos, int d)
+    {
+        if (d < 0 || d > 9) return;
+        for (const char* c = kDigits[d]; *c; ++c) set (std::string ("seg_") + pos + "_" + *c);
+    };
+    const bool blinkOn = std::fmod (blinkPhase, 1.0) < 0.5;
+
+    bool showValue = true;
+    if (t < favBlinkUntil) showValue = std::fmod ((favBlinkUntil - t) / 180.0, 1.0) > 0.45;
+
+    if (showValue)
+    {
+        if (mixAdjust)
+        {
+            const int n = juce::jlimit (0, 100, (int) std::lround (e.mix));
+            if (n == 100) { set ("seg_s_u"); set ("seg_s_d"); digit ('t', 0); digit ('u', 0); }
+            else
+            {
+                if (n >= 10) digit ('t', n / 10);
+                digit ('u', n % 10);
+            }
+        }
+        else
+        {
+            const int s = e.semis;
+            if (s != 0) { set ("seg_s_l"); set ("seg_s_r"); }
+            if (s > 0) { set ("seg_s_u"); set ("seg_s_d"); }
+            const int a = std::abs (s);
+            if (a >= 10) digit ('t', a / 10);
+            digit ('u', a % 10);
+        }
+    }
+    if (e.mixOn || mixAdjust)
+        if (! mixAdjust || blinkOn) set ("dot_mix");
+    if (e.fav) set ("dot_fav");
+    return m;
+}
+
+// ---------------------------------------------------------------- painting
+void SemitonesEditor::paint (juce::Graphics& g)
+{
+    lastPaintMs = nowMs();
+    pendingSince = 0;
+    g.fillAll (kBar);
+    const auto bounds = getLocalBounds().toFloat();
+    g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+    if (bgCache.isValid())
+        g.drawImage (bgCache, bounds, juce::RectanglePlacement::stretchToFit);
+    else if (bgImage.isValid())
+        g.drawImage (bgImage, bounds, juce::RectanglePlacement::stretchToFit);
+
+    // LED: light on the faceplate first, then the lens (fade in / out)
+    static const char* cols[3] = { "red", "blue", "green" };
+    for (int c = 0; c < 3; ++c)
+        if (led[c] > 0.003f)
+        {
+            drawSprite (g, std::string ("ledlight_") + cols[c], led[c]);
+            drawSprite (g, std::string ("led_") + cols[c], led[c]);
+        }
+
+    // pressed controls
+    if (downLeft)  drawSprite (g, "press_left");
+    if (downRight) drawSprite (g, "press_right");
+    if (downMix)   drawSprite (g, "press_mix");
+    if (downFav)   drawSprite (g, "press_fav");
+    if (downFoot)  drawSprite (g, "press_foot");
+
+    // display
+    for (size_t i = 0; i < segNames.size(); ++i)
+        if (segMask & (1u << i))
+            drawSprite (g, segNames[i]);
+    g.setOpacity (1.0f);
+
+    // top bar label + status line
+    const float s = scale();
+    g.setFont (look.uiFont (11.0f * s));
+    g.setColour (kInkDim);
+    g.drawText ("PRESET", juce::Rectangle<float> (0, 0, 196.0f * s, Layout::topBar * s), juce::Justification::centredRight);
+    const auto status = statusText();
+    auto sr = juce::Rectangle<float> (0, (Layout::H - Layout::bottomBar) * s, (float) getWidth(), Layout::bottomBar * s);
+    g.setFont (look.uiFont (13.0f * s));
+    g.setColour (kInk.withAlpha (0.92f));
+    g.drawText (status, sr.reduced (14.0f * s, 0), juce::Justification::centred, true);
+}
+
+juce::String SemitonesEditor::statusText() const
+{
+    const int lt = proc.learnTarget.load();
+    if (lt >= 0)
+        return "MIDI LEARN  -  move a controller for: " + SemitonesProcessor::targetName ((MidiTarget) lt);
+    if (hover != Hit::none && hover != Hit::background && nowMs() - hoverSince < 2500.0)
+        return hintFor (hover);
+    const auto e = proc.getEffective();
+    juce::String st = e.semis > 0 ? "+" + juce::String (e.semis) : juce::String (e.semis);
+    st = st.replace ("-", juce::String::fromUTF8 ("\xe2\x88\x92"));
+    juce::String txt;
+    txt << "PITCH  " << st << " st     MIX  " << juce::String ((int) std::lround (e.mix)) << " %"
+        << (e.mixOn ? "  ON" : "  OFF")
+        << "     FAV  " << (e.fav ? "ON" : "OFF");
+    if (! e.on) txt << "     BYPASS";
+    return txt;
+}
+
+juce::String SemitonesEditor::hintFor (Hit h) const
+{
+    switch (h)
+    {
+        case Hit::left:    return mixAdjust ? "Lower the mix" : "Lower the pitch one semitone (hold to repeat)";
+        case Hit::right:   return mixAdjust ? "Raise the mix" : "Raise the pitch one semitone (hold to repeat)";
+        case Hit::mix:     return "MIX: click = mix mode on/off   -   hold = adjust the mix with the arrows";
+        case Hit::fav:     return "FAV: click = recall / leave FAV   -   hold = save the current sound as FAV";
+        case Hit::foot:    return "Footswitch: effect on / bypass   -   right click: MIDI";
+        case Hit::display: return "Drag or scroll to change the pitch   -   right click: MIDI";
+        case Hit::led:     return "Red: pitch 100 %   -   Blue: MIX mode   -   Green: FAV";
+        default: break;
+    }
+    return {};
+}
+
+void SemitonesEditor::resized()
+{
+    // never setSize() here (Windows scaling loops) - the constrainer does the job
+    const float s = scale();
+    presetBox.setBounds (juce::Rectangle<float> (206.0f * s, 7.0f * s, 348.0f * s, 26.0f * s).toNearestInt());
+    resizeSettle = 4;
+}
+
+void SemitonesEditor::rebuildCache()
+{
+    if (! bgImage.isValid() || getWidth() <= 0) return;
+    const float ds = juce::Component::getApproximateScaleFactorForComponent (this);
+    const int pw = juce::jmax (1, juce::roundToInt ((float) getWidth() * ds));
+    const int ph = juce::jmax (1, juce::roundToInt ((float) getHeight() * ds));
+    if (bgCache.isValid() && bgCache.getWidth() == pw && bgCache.getHeight() == ph) return;
+    if (pw == bgImage.getWidth() && ph == bgImage.getHeight())
+        bgCache = bgImage;
+    else
+        bgCache = bgImage.rescaled (pw, ph, juce::Graphics::highResamplingQuality);
+    cacheScale = ds;
+    repaint();
+}
+
+// ---------------------------------------------------------------- anti-freeze
+void SemitonesEditor::useSoftwareRenderer()
+{
+   #if JUCE_WINDOWS
+    if (auto* peer = getPeer())
+    {
+        const auto engines = peer->getAvailableRenderingEngines();
+        int idx = engines.indexOf ("Software Renderer");
+        if (idx < 0) idx = 0;
+        if (peer->getCurrentRenderingEngine() != idx)
+            peer->setCurrentRenderingEngine (idx);
+        if ((void*) peer != lastPeer)
+        {
+            lastPeer = (void*) peer;
+            repaint();
+        }
+    }
+   #else
+    lastPeer = (void*) getPeer();
+   #endif
+}
+
+void SemitonesEditor::parentHierarchyChanged() { useSoftwareRenderer(); }
+
+void SemitonesEditor::visibilityChanged()
+{
+    useSoftwareRenderer();
+    if (isShowing()) repaint();
+}
+
+void SemitonesEditor::askRepaint (juce::Rectangle<int> r)
+{
+    if (pendingSince == 0) pendingSince = nowMs();
+    repaint (r);
+}
+
+void SemitonesEditor::syncPresetBox()
+{
+    const auto e = proc.getEffective();
+    const auto& list = SemitonesProcessor::factoryPresets();
+    int id = 0;
+    const int cur = proc.currentPreset;
+    auto matches = [&] (const FactoryPreset& p)
+    {
+        return ! e.fav && p.semis == e.semis && p.mixOn == e.mixOn && (! p.mixOn || std::abs (p.mix - e.mix) < 0.5f);
+    };
+    if (cur >= 0 && cur < (int) list.size() && matches (list[(size_t) cur])) id = cur + 1;
+    else
+        for (int i = 0; i < (int) list.size(); ++i)
+            if (matches (list[(size_t) i])) { id = i + 1; break; }
+    if (presetBox.getSelectedId() != id)
+        presetBox.setSelectedId (id, juce::dontSendNotification);
+}
+
+// ---------------------------------------------------------------- timer (30 Hz)
+void SemitonesEditor::timerCallback()
+{
+    const double t = nowMs();
+    blinkPhase = t / 250.0;          // 4 Hz flashing
+
+    // anti-freeze: renderer + watchdog
+    if (getPeer() != lastPeer || t - lastRendererCheck > 1000.0)
+    {
+        lastRendererCheck = t;
+        useSoftwareRenderer();
+    }
+    if (pendingSince > 0 && t - pendingSince > 1500.0 && isShowing())
+    {
+        lastPeer = nullptr;
+        useSoftwareRenderer();
+        repaint();
+        pendingSince = t;
+    }
+    // caches: rebuilt only from here, after a resize has settled or the scale changed
+    if (resizeSettle > 0 && --resizeSettle == 0) rebuildCache();
+    if (t - lastScaleCheck > 250.0)
+    {
+        lastScaleCheck = t;
+        const float ds = juce::Component::getApproximateScaleFactorForComponent (this);
+        if (std::abs (ds - lastDisplayScale) > 0.001f) { lastDisplayScale = ds; rebuildCache(); }
+    }
+
+    // long presses
+    if (downMix && ! longDone && t - tDown >= kMixHoldMs)
+    {
+        longDone = true;
+        mixAdjust = true;
+        mixAdjustLast = t;
+        if (proc.getEffective().fav) proc.exitFavKeeping();
+        proc.setParam (ParamID::mixOn, 1.0f);
+    }
+    if (downFav && ! longDone && t - tDown >= kFavHoldMs)
+    {
+        longDone = true;
+        proc.saveFav();
+        favBlinkUntil = t + 900.0;
+    }
+    // arrow auto-repeat
+    if ((downLeft || downRight) && t >= nextRepeat)
+    {
+        stepAction (downRight ? 1 : -1);
+        nextRepeat = t + (mixAdjust ? 45.0 : 150.0);
+    }
+    if (mixAdjust && ! downMix && ! downLeft && ! downRight && t - mixAdjustLast > 4000.0)
+        mixAdjust = false;
+
+    // LED (Echoflex fades: 0.45 on / 0.28 off per frame)
+    const auto e = proc.getEffective();
+    int col = e.fav ? 2 : (e.mixOn ? 1 : 0);
+    bool lit = e.on;
+    if (mixAdjust) { col = 1; lit = e.on ? std::fmod (blinkPhase, 1.0) < 0.5 : false; }
+    for (int c = 0; c < 3; ++c)
+    {
+        const float target = (lit && c == col) ? 1.0f : 0.0f;
+        led[c] += (target - led[c]) * (target > led[c] ? 0.45f : 0.28f);
+        if (std::abs (led[c] - target) < 0.004f) led[c] = target;
+    }
+
+    // what changed?
+    bool ledChanged = false;
+    for (int c = 0; c < 3; ++c)
+        if (std::abs (led[c] - drawnLed[c]) > 0.002f) { ledChanged = true; drawnLed[c] = led[c]; }
+    if (ledChanged)
+        if (auto* sp = sprite ("ledlight_red")) askRepaint (toScreen (sp->r, 4.0f));
+
+    segMask = computeSegments();
+    if (segMask != drawnSegMask)
+    {
+        drawnSegMask = segMask;
+        askRepaint (toScreen ({ Layout::hitDisplay.x, Layout::hitDisplay.y, Layout::hitDisplay.w, Layout::hitDisplay.h }, 4.0f));
+    }
+    const int pressed = (downLeft ? 1 : 0) | (downRight ? 2 : 0) | (downMix ? 4 : 0) | (downFav ? 8 : 0) | (downFoot ? 16 : 0);
+    if (pressed != drawnPressed)
+    {
+        const int changed = pressed ^ (drawnPressed < 0 ? 31 : drawnPressed);
+        drawnPressed = pressed;
+        const char* names[5] = { "press_left", "press_right", "press_mix", "press_fav", "press_foot" };
+        for (int b = 0; b < 5; ++b)
+            if (changed & (1 << b))
+                if (auto* sp = sprite (names[b])) askRepaint (toScreen (sp->r, 3.0f));
+    }
+    const auto status = statusText();
+    if (status != drawnStatus)
+    {
+        drawnStatus = status;
+        askRepaint (toScreen ({ 0, Layout::H - Layout::bottomBar, Layout::W, Layout::bottomBar }, 0.0f));
+    }
+    syncPresetBox();
+}
+
+// ---------------------------------------------------------------- actions
+void SemitonesEditor::stepAction (int dir)
+{
+    if (mixAdjust)
+    {
+        proc.stepMix ((float) dir);
+        mixAdjustLast = nowMs();
+    }
+    else
+        proc.stepSemitone (dir);
+}
+
+void SemitonesEditor::mouseDown (const juce::MouseEvent& ev)
+{
+    const auto p = toLogical (ev.position);
+    const Hit h = hitTest (p);
+    if (ev.mods.isPopupMenu())
+    {
+        showMenu (h);
+        return;
+    }
+    const double t = nowMs();
+    tDown = t;
+    longDone = false;
+    dragAccum = 0;
+    switch (h)
+    {
+        case Hit::left:  downLeft = true;  stepAction (-1); nextRepeat = t + 450.0; break;
+        case Hit::right: downRight = true; stepAction (+1); nextRepeat = t + 450.0; break;
+        case Hit::mix:   downMix = true; break;
+        case Hit::fav:   downFav = true; break;
+        case Hit::foot:  downFoot = true; proc.toggleParam (ParamID::on); break;   // toggles on press, like Echoflex
+        default: break;
+    }
+    timerCallback();
+}
+
+void SemitonesEditor::mouseUp (const juce::MouseEvent&)
+{
+    const double held = nowMs() - tDown;
+    if (downMix && ! longDone)
+    {
+        if (mixAdjust) mixAdjust = false;                         // leave mix adjust
+        else
+        {
+            if (proc.getEffective().fav) proc.exitFavKeeping();
+            proc.toggleParam (ParamID::mixOn);
+        }
+    }
+    if (downFav && ! longDone && held < kFavHoldMs)
+    {
+        mixAdjust = false;
+        proc.toggleParam (ParamID::fav);
+    }
+    downLeft = downRight = downMix = downFav = downFoot = false;
+    longDone = false;
+    timerCallback();
+}
+
+void SemitonesEditor::mouseDrag (const juce::MouseEvent& ev)
+{
+    if (hitTest (toLogical (ev.mouseDownPosition)) != Hit::display) return;
+    const float dy = (float) ev.getDistanceFromDragStartY() / scale();
+    const float stepPx = mixAdjust ? 3.0f : 16.0f;
+    const int target = (int) (-dy / stepPx);
+    const int done = (int) dragAccum;
+    if (target != done)
+    {
+        stepAction (target > done ? 1 : -1);
+        dragAccum = (float) (done + (target > done ? 1 : -1));
+    }
+}
+
+void SemitonesEditor::mouseMove (const juce::MouseEvent& ev)
+{
+    const Hit h = hitTest (toLogical (ev.position));
+    if (h != hover)
+    {
+        hover = h;
+        hoverSince = nowMs();
+    }
+    setMouseCursor (h == Hit::background || h == Hit::led || h == Hit::none ? juce::MouseCursor::NormalCursor
+                                                                             : juce::MouseCursor::PointingHandCursor);
+}
+
+void SemitonesEditor::mouseExit (const juce::MouseEvent&) { hover = Hit::none; }
+
+void SemitonesEditor::mouseWheelMove (const juce::MouseEvent& ev, const juce::MouseWheelDetails& w)
+{
+    const Hit h = hitTest (toLogical (ev.position));
+    if (h == Hit::display || h == Hit::left || h == Hit::right)
+    {
+        const float d = w.deltaY != 0 ? w.deltaY : -w.deltaX;
+        if (d != 0) stepAction (d > 0 ? 1 : -1);
+    }
+}
+
+void SemitonesEditor::showMenu (Hit h)
+{
+    juce::PopupMenu m;
+    m.setLookAndFeel (&look);
+    std::vector<MidiTarget> targets;
+    switch (h)
+    {
+        case Hit::foot:    targets = { MidiTarget::footswitch }; break;
+        case Hit::left:    targets = { MidiTarget::down }; break;
+        case Hit::right:   targets = { MidiTarget::up }; break;
+        case Hit::mix:     targets = { MidiTarget::mixOn, MidiTarget::mix }; break;
+        case Hit::fav:     targets = { MidiTarget::fav }; break;
+        case Hit::display: targets = { MidiTarget::semitones, MidiTarget::up, MidiTarget::down }; break;
+        default: break;
+    }
+    int id = 1;
+    struct Act { int kind; MidiTarget t; float size; };
+    std::map<int, Act> acts;
+    for (auto t : targets)
+    {
+        m.addSectionHeader ("MIDI  -  " + SemitonesProcessor::targetName (t));
+        const int cc = proc.midiCC[(size_t) t].load();
+        acts[id] = { 0, t, 0 };
+        m.addItem (id++, cc >= 0 ? "MIDI Learn (now CC " + juce::String (cc) + ")" : "MIDI Learn", true,
+                   proc.learnTarget.load() == (int) t);
+        if (SemitonesProcessor::isToggle (t))
+        {
+            const bool mom = proc.momentary[(size_t) t].load();
+            acts[id] = { 1, t, 0 };
+            m.addItem (id++, "Latching switch (CC >= 64 = on)", true, ! mom);
+            acts[id] = { 2, t, 0 };
+            m.addItem (id++, "Momentary switch (each press toggles)", true, mom);
+        }
+        if (SemitonesProcessor::isContinuous (t))
+        {
+            acts[id] = { 4, t, 0 };
+            m.addItem (id++, "Reset expression pedal travel", cc >= 0);
+        }
+        acts[id] = { 3, t, 0 };
+        m.addItem (id++, "Clear", cc >= 0);
+    }
+    if (proc.learnTarget.load() >= 0)
+    {
+        m.addSeparator();
+        acts[id] = { 5, MidiTarget::count, 0 };
+        m.addItem (id++, "Cancel MIDI Learn");
+    }
+    m.addSectionHeader ("Window size");
+    for (float sz : { 1.0f, 1.25f, 1.5f })
+    {
+        acts[id] = { 6, MidiTarget::count, sz };
+        const bool cur = std::abs ((float) getWidth() - Layout::W * sz) < 2.0f;
+        m.addItem (id++, sz == 1.0f ? "Default (100 %)" : juce::String ((int) (sz * 100)) + " %", true, cur);
+    }
+
+    juce::Component::SafePointer<SemitonesEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withMousePosition(),
+        [safe, acts] (int r)
+        {
+            if (safe == nullptr || r <= 0) return;
+            auto it = acts.find (r);
+            if (it == acts.end()) return;
+            auto& pr = safe->proc;
+            const auto a = it->second;
+            const size_t ti = (size_t) a.t;
+            switch (a.kind)
+            {
+                case 0: pr.learnTarget.store ((int) a.t); break;
+                case 1: pr.momentary[ti].store (false); break;
+                case 2: pr.momentary[ti].store (true); break;
+                case 3: pr.clearMidi (a.t); break;
+                case 4: pr.courseMin[ti].store (1.0f); pr.courseMax[ti].store (0.0f); break;
+                case 5: pr.learnTarget.store (-1); break;
+                case 6: safe->setSize (juce::roundToInt (Layout::W * a.size), juce::roundToInt (Layout::H * a.size)); break;
+                default: break;
+            }
+        });
+}
+
+// ---------------------------------------------------------------- offline rendering
+void SemitonesEditor::setPreviewState (bool l, bool r, bool mx, bool fv, bool ft, bool adjustMix)
+{
+    downLeft = l; downRight = r; downMix = mx; downFav = fv; downFoot = ft;
+    mixAdjust = adjustMix;
+    longDone = true;
+    tDown = nowMs();
+    nextRepeat = 1e300;
+}
+
+void SemitonesEditor::settleForSnapshot()
+{
+    resizeSettle = 1;
+    for (int i = 0; i < 40; ++i) timerCallback();
+    bgCache = bgImage;            // full resolution art for 2x snapshots
+}
