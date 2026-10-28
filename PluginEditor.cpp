@@ -61,11 +61,11 @@ void SemitonesLook::drawComboBox (juce::Graphics& g, int w, int h, bool down, in
     g.strokePath (p, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 }
 
-juce::Font SemitonesLook::getComboBoxFont (juce::ComboBox& b) { return uiFont (juce::jmin (14.0f, (float) b.getHeight() * 0.52f)); }
+juce::Font SemitonesLook::getComboBoxFont (juce::ComboBox& b) { return uiFont (juce::jlimit (10.0f, 16.0f, (float) b.getHeight() * 0.5f)); }
 
 void SemitonesLook::positionComboBoxText (juce::ComboBox& box, juce::Label& label)
 {
-    label.setBounds (14, 1, box.getWidth() - 40, box.getHeight() - 2);
+    label.setBounds (box.getHeight() / 2, 1, box.getWidth() - box.getHeight() * 2, box.getHeight() - 2);
     label.setFont (getComboBoxFont (box));
     label.setJustificationType (juce::Justification::centred);
 }
@@ -136,10 +136,13 @@ SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     syncPresetBox();
 
     setResizable (true, true);
-    setResizeLimits ((int) Layout::W, (int) Layout::H, (int) Layout::W * 2, (int) Layout::H * 2);
+    // default size = minimum size (simple pedal format, like Echoflex / Holyverb)
+    const int defW = juce::roundToInt (Layout::W * Layout::defaultScale);
+    const int defH = juce::roundToInt (Layout::H * Layout::defaultScale);
+    setResizeLimits (defW, defH, defW * 2, defH * 2);
     if (auto* c = getConstrainer())
         c->setFixedAspectRatio (Layout::W / Layout::H);
-    setSize ((int) Layout::W, (int) Layout::H);
+    setSize (defW, defH);
 
     const auto e = proc.getEffective();
     if (e.on) led[0] = 1.0f;
@@ -285,14 +288,14 @@ void SemitonesEditor::paint (juce::Graphics& g)
 
     // top bar label + status line
     const float s = scale();
-    g.setFont (look.uiFont (11.0f * s));
+    g.setFont (look.uiFont (19.0f * s));
     g.setColour (kInkDim);
-    g.drawText ("PRESET", juce::Rectangle<float> (0, 0, 196.0f * s, Layout::topBar * s), juce::Justification::centredRight);
+    g.drawText ("PRESET", juce::Rectangle<float> (0, 0, 172.0f * s, Layout::topBar * s), juce::Justification::centredRight);
     const auto status = statusText();
     auto sr = juce::Rectangle<float> (0, (Layout::H - Layout::bottomBar) * s, (float) getWidth(), Layout::bottomBar * s);
-    g.setFont (look.uiFont (13.0f * s));
+    g.setFont (look.uiFont (22.0f * s));
     g.setColour (kInk.withAlpha (0.92f));
-    g.drawText (status, sr.reduced (14.0f * s, 0), juce::Justification::centred, true);
+    g.drawFittedText (status, sr.reduced (16.0f * s, 0).toNearestInt(), juce::Justification::centred, 1, 0.7f);
 }
 
 juce::String SemitonesEditor::statusText() const
@@ -332,7 +335,7 @@ void SemitonesEditor::resized()
 {
     // never setSize() here (Windows scaling loops) - the constrainer does the job
     const float s = scale();
-    presetBox.setBounds (juce::Rectangle<float> (206.0f * s, 7.0f * s, 348.0f * s, 26.0f * s).toNearestInt());
+    presetBox.setBounds (juce::Rectangle<float> (184.0f * s, 9.0f * s, 392.0f * s, 38.0f * s).toNearestInt());
     resizeSettle = 4;
 }
 
@@ -645,11 +648,13 @@ void SemitonesEditor::showMenu (Hit h)
         m.addItem (id++, "Cancel MIDI Learn");
     }
     m.addSectionHeader ("Window size");
-    for (float sz : { 1.0f, 1.25f, 1.5f })
+    for (float sz : { 1.0f, 1.25f, 1.5f, 2.0f })
     {
         acts[id] = { 6, MidiTarget::count, sz };
-        const bool cur = std::abs ((float) getWidth() - Layout::W * sz) < 2.0f;
-        m.addItem (id++, sz == 1.0f ? "Default (100 %)" : juce::String ((int) (sz * 100)) + " %", true, cur);
+        const int w = juce::roundToInt (Layout::W * Layout::defaultScale * sz);
+        const bool cur = std::abs (getWidth() - w) < 2;
+        m.addItem (id++, sz == 1.0f ? "Default (" + juce::String (w) + " x " + juce::String (juce::roundToInt (Layout::H * Layout::defaultScale)) + ")"
+                                    : juce::String ((int) (sz * 100)) + " %", true, cur);
     }
 
     juce::Component::SafePointer<SemitonesEditor> safe (this);
@@ -670,7 +675,7 @@ void SemitonesEditor::showMenu (Hit h)
                 case 3: pr.clearMidi (a.t); break;
                 case 4: pr.courseMin[ti].store (1.0f); pr.courseMax[ti].store (0.0f); break;
                 case 5: pr.learnTarget.store (-1); break;
-                case 6: safe->setSize (juce::roundToInt (Layout::W * a.size), juce::roundToInt (Layout::H * a.size)); break;
+                case 6: safe->setSize (juce::roundToInt (Layout::W * Layout::defaultScale * a.size), juce::roundToInt (Layout::H * Layout::defaultScale * a.size)); break;
                 default: break;
             }
         });

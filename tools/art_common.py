@@ -6,10 +6,10 @@ logical, rendered at 2x).
 """
 
 # ---------------------------------------------------------------- layout
-LOGICAL_W, LOGICAL_H = 760, 958        # default editor size (simple format)
+LOGICAL_W, LOGICAL_H = 760, 958        # design units; the window opens at half this (380 x 479, Echoflex size)
 HIDPI = 2                               # art rendered at 2x
-TOP_BAR = 40                            # preset menu strip (logical px)
-BOTTOM_BAR = 38                         # status line strip (logical px)
+TOP_BAR = 56                            # preset menu strip (design units)
+BOTTOM_BAR = 44                         # status line strip (design units)
 PEDAL_MAX_Y = 1113                      # ignore anything below (old status text)
 
 # --------------------------------------------------------------- controls

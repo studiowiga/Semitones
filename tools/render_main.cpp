@@ -94,7 +94,7 @@ int main (int argc, char** argv)
         if (s.fav) { proc.favSemis.store (s.semis); proc.favMixOn.store (s.mixOn); proc.favMix.store (s.mix); setP (proc, ParamID::fav, 1.0f); }
         e->setPreviewState (s.l, s.r, s.mx, s.fv, s.ft, s.adjust);
         e->settleForSnapshot();
-        auto img = e->createComponentSnapshot (e->getLocalBounds(), true, 2.0f);
+        auto img = e->createComponentSnapshot (e->getLocalBounds(), true, 4.0f);
         juce::File f = outDir.getChildFile (s.file);
         f.deleteFile();
         juce::FileOutputStream os (f);

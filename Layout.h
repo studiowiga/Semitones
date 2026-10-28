@@ -3,43 +3,44 @@
 namespace Layout {
 struct R { float x, y, w, h; };
 struct Sprite { const char* name; R r; };
-constexpr float W = 760.0f, H = 958.0f, topBar = 40.0f, bottomBar = 38.0f;
+constexpr float W = 760.0f, H = 958.0f, topBar = 56.0f, bottomBar = 44.0f;
 constexpr Sprite sprites[] = {
-    { "seg_s_l", { 261.00f, 227.50f, 62.00f, 50.50f } },
-    { "seg_s_r", { 294.00f, 227.50f, 61.50f, 50.50f } },
-    { "seg_s_u", { 284.00f, 208.50f, 50.50f, 58.50f } },
-    { "seg_s_d", { 282.50f, 238.50f, 50.50f, 58.50f } },
-    { "seg_t_a", { 349.50f, 196.50f, 69.50f, 52.00f } },
-    { "seg_t_b", { 380.00f, 209.00f, 50.00f, 57.00f } },
-    { "seg_t_c", { 378.50f, 239.50f, 50.00f, 57.00f } },
-    { "seg_t_d", { 346.50f, 257.00f, 69.50f, 52.00f } },
-    { "seg_t_e", { 335.50f, 239.50f, 50.50f, 57.00f } },
-    { "seg_t_f", { 337.00f, 209.00f, 50.50f, 57.00f } },
-    { "seg_t_g", { 348.00f, 227.00f, 69.50f, 51.50f } },
-    { "seg_u_a", { 417.00f, 196.50f, 70.00f, 52.00f } },
-    { "seg_u_b", { 447.50f, 209.00f, 50.50f, 57.00f } },
-    { "seg_u_c", { 446.00f, 239.50f, 50.50f, 57.00f } },
-    { "seg_u_d", { 414.00f, 257.00f, 70.00f, 52.00f } },
-    { "seg_u_e", { 403.50f, 239.50f, 50.00f, 57.00f } },
-    { "seg_u_f", { 405.00f, 209.00f, 50.00f, 57.00f } },
-    { "seg_u_g", { 415.50f, 227.00f, 70.00f, 51.50f } },
-    { "dot_mix", { 254.00f, 323.00f, 37.50f, 37.50f } },
-    { "dot_fav", { 467.00f, 323.00f, 37.00f, 37.50f } },
-    { "ringlight", { 260.00f, 651.50f, 240.00f, 240.00f } },
-    { "ring_lit", { 260.00f, 651.50f, 240.00f, 240.00f } },
-    { "ring_comet", { 227.94f, 619.22f, 305.00f, 305.00f } },
-    { "press_mix", { 253.00f, 390.50f, 58.50f, 58.50f } },
-    { "press_fav", { 448.50f, 390.50f, 58.50f, 58.50f } },
-    { "press_left", { 153.00f, 213.00f, 74.50f, 84.50f } },
-    { "press_right", { 530.00f, 213.00f, 74.50f, 84.50f } },
-    { "press_foot", { 304.50f, 695.50f, 152.00f, 152.00f } },
+    { "seg_s_l", { 264.00f, 238.00f, 60.50f, 50.50f } },
+    { "seg_s_r", { 295.50f, 238.00f, 61.00f, 50.50f } },
+    { "seg_s_u", { 286.00f, 220.00f, 50.00f, 58.00f } },
+    { "seg_s_d", { 284.50f, 249.00f, 50.00f, 58.00f } },
+    { "seg_t_a", { 350.00f, 208.50f, 68.50f, 51.00f } },
+    { "seg_t_b", { 379.50f, 220.50f, 49.50f, 56.50f } },
+    { "seg_t_c", { 378.00f, 250.00f, 50.00f, 56.50f } },
+    { "seg_t_d", { 347.00f, 267.00f, 68.50f, 51.50f } },
+    { "seg_t_e", { 336.50f, 250.00f, 49.50f, 56.50f } },
+    { "seg_t_f", { 338.00f, 220.50f, 49.50f, 56.50f } },
+    { "seg_t_g", { 348.50f, 237.50f, 68.50f, 51.50f } },
+    { "seg_u_a", { 416.00f, 208.50f, 68.50f, 51.00f } },
+    { "seg_u_b", { 445.50f, 220.50f, 49.50f, 56.50f } },
+    { "seg_u_c", { 444.00f, 250.00f, 50.00f, 56.50f } },
+    { "seg_u_d", { 413.00f, 267.00f, 68.50f, 51.50f } },
+    { "seg_u_e", { 402.50f, 250.00f, 49.50f, 56.50f } },
+    { "seg_u_f", { 404.00f, 220.50f, 49.50f, 56.50f } },
+    { "seg_u_g", { 414.50f, 237.50f, 68.50f, 51.50f } },
+    { "dot_mix", { 257.00f, 331.50f, 37.00f, 37.00f } },
+    { "dot_fav", { 464.50f, 331.50f, 36.50f, 37.00f } },
+    { "ringlight", { 263.00f, 652.00f, 234.00f, 234.00f } },
+    { "ring_lit", { 263.00f, 652.00f, 234.00f, 234.00f } },
+    { "ring_comet", { 229.93f, 618.93f, 301.00f, 301.00f } },
+    { "press_mix", { 256.00f, 397.50f, 57.00f, 57.00f } },
+    { "press_fav", { 446.50f, 397.50f, 57.00f, 57.00f } },
+    { "press_left", { 158.50f, 224.50f, 73.00f, 82.50f } },
+    { "press_right", { 526.50f, 224.50f, 72.50f, 82.50f } },
+    { "press_foot", { 306.50f, 695.50f, 148.00f, 148.00f } },
 };
-constexpr R hitLeft { 153.19f, 213.26f, 74.14f, 83.81f };
-constexpr R hitRight { 530.33f, 213.26f, 74.14f, 83.81f };
-constexpr R hitDisplay { 241.03f, 135.90f, 275.60f, 236.12f };
-constexpr float mixX = 282.12f, mixY = 419.56f, mixR = 28.18f;
-constexpr float favX = 477.55f, favY = 419.56f, favR = 28.18f;
-constexpr float footX = 380.44f, footY = 771.72f, footR = 75.75f;
-constexpr R pedal { 100.00f, 40.00f, 559.50f, 880.00f };
-constexpr float ringX = 380.440f, ringY = 771.722f;  // light ring centre
+constexpr R hitLeft { 158.86f, 224.93f, 72.29f, 81.71f };
+constexpr R hitRight { 526.57f, 224.93f, 72.29f, 81.71f };
+constexpr R hitDisplay { 244.50f, 149.50f, 268.71f, 230.21f };
+constexpr float mixX = 284.57f, mixY = 426.07f, mixR = 27.57f;
+constexpr float favX = 475.11f, favY = 426.07f, favR = 27.57f;
+constexpr float footX = 380.43f, footY = 769.43f, footR = 73.86f;
+constexpr R pedal { 107.00f, 56.00f, 545.50f, 858.00f };
+constexpr float defaultScale = 0.5f;   // default window = 380 x 479 (simple pedal format, like Echoflex / Holyverb)
+constexpr float ringX = 380.429f, ringY = 769.429f;  // light ring centre
 }

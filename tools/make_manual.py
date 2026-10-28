@@ -283,10 +283,10 @@ def part(lang):
                  "<i>Reset expression pedal travel</i>).")))
 
     s.append(P(T('Window', 'Fenêtre'), 'h2'))
-    s.append(P(T("The window opens at the default size of the Studio Wiga single pedals (760 x 958) and cannot be made smaller. "
-                 "Drag the bottom-right corner to enlarge it (aspect ratio kept), or right-click the background: Default / 125 % / 150 %.",
-                 "La fenêtre s'ouvre à la taille par défaut des pédales simples Studio Wiga (760 x 958) et ne peut pas être réduite. "
-                 "Tirez le coin inférieur droit pour l'agrandir (proportions conservées) ou clic droit sur le fond : Default / 125 % / 150 %.")))
+    s.append(P(T("The window opens at the default size of the Studio Wiga single pedals (380 x 479, like Echoflex and Holyverb) and cannot be made smaller. "
+                 "Drag the bottom-right corner to enlarge it (aspect ratio kept), or right-click the background: Default / 125 % / 150 % / 200 %.",
+                 "La fenêtre s'ouvre à la taille par défaut des pédales simples Studio Wiga (380 x 479, comme Echoflex et Holyverb) et ne peut pas être réduite. "
+                 "Tirez le coin inférieur droit pour l'agrandir (proportions conservées) ou clic droit sur le fond : Default / 125 % / 150 % / 200 %.")))
 
     s.append(PageBreak())
     s.append(P(T('6. Presets', '6. Presets'), 'h1'))
@@ -324,7 +324,7 @@ def part(lang):
         ['Bypass', T('buffered, 6 ms crossfade', 'bufférisé, fondu de 6 ms')],
         ['MIDI', T('MIDI learn on every control, latching / momentary switches, 14-bit CC, learned pedal travel',
                     'MIDI learn sur chaque commande, switchs à accrochage / momentanés, CC 14 bits, course de pédale apprise')],
-        [T('Window', 'Fenêtre'), T('760 x 958 default (minimum), resizable up to 200 %', '760 x 958 par défaut (minimum), redimensionnable jusqu\'à 200 %')],
+        [T('Window', 'Fenêtre'), T('380 x 479 default (minimum), resizable up to 200 %', '380 x 479 par défaut (minimum), redimensionnable jusqu\'à 200 %')],
     ], [42 * mm, CW - 42 * mm])]))
     return s
 

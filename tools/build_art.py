@@ -407,6 +407,7 @@ lines.append('constexpr R hitDisplay { %.2ff, %.2ff, %.2ff, %.2ff };' % rect_of(
 for k in ('mix', 'fav', 'foot'):
     lines.append('constexpr float %sX = %.2ff, %sY = %.2ff, %sR = %.2ff;' % (k, hit[k][0], k, hit[k][1], k, hit[k][2]))
 lines.append('constexpr R pedal { %.2ff, %.2ff, %.2ff, %.2ff };' % hit['pedal'])
+lines.append('constexpr float defaultScale = 0.5f;   // default window = 380 x 479 (simple pedal format, like Echoflex / Holyverb)')
 lines.append('constexpr float ringX = %.3ff, ringY = %.3ff;  // light ring centre' % (FC[0] / HIDPI, FC[1] / HIDPI))
 lines.append('}')
 with open(os.path.join(ROOT, 'Layout.h'), 'w') as f:
