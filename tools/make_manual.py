@@ -129,22 +129,22 @@ CW = W - 36 * mm
 # ------------------------------------------------------------ content
 PRESETS = [
     ('Standard (0)', '0', 'off', 'Plain pass-through, the pedal ready to be moved.', 'Signal direct, pédale prête à être déplacée.'),
-    ('Eb Standard / Half step down (-1)', '-1', 'off', 'Hendrix / SRV / Van Halen tuning from a guitar in E.', 'Accordage Hendrix / SRV / Van Halen depuis une guitare en Mi.'),
-    ('D Standard / Whole step down (-2)', '-2', 'off', 'Heavier rhythm, singer-friendly keys.', 'Rythmiques plus lourdes, tonalités plus faciles à chanter.'),
+    ('Eb Standard (-1)', '-1', 'off', 'Hendrix / SRV / Van Halen tuning from a guitar in E.', 'Accordage Hendrix / SRV / Van Halen depuis une guitare en Mi.'),
+    ('D Standard (-2)', '-2', 'off', 'Heavier rhythm, singer-friendly keys.', 'Rythmiques plus lourdes, tonalités plus faciles à chanter.'),
     ('C# Standard (-3)', '-3', 'off', 'Classic 90s / nu-metal territory.', 'Territoire années 90 / néo-métal.'),
     ('C Standard (-4)', '-4', 'off', 'Modern metal, drop C riffs on a guitar in drop D.', 'Métal moderne, riffs en drop C depuis une guitare en drop D.'),
     ('B Standard (-5)', '-5', 'off', 'Baritone feel on a regular six-string.', 'Sensation baryton sur une six-cordes.'),
     ('Bb Standard (-6)', '-6', 'off', 'Very low six-string tuning.', 'Accordage très grave pour six-cordes.'),
     ('Baritone A (-7)', '-7', 'off', 'Down a fifth: E becomes A.', 'Une quinte plus bas : Mi devient La.'),
     ('Octave down (-12)', '-12', 'off', 'Bass-like line from the guitar.', 'Ligne de basse jouée à la guitare.'),
-    ('Octave doubler down (-12 + dry)', '-12', '50 %', 'Fast octaver: guitar + octave below.', 'Octaver rapide : guitare + octave inférieure.'),
-    ('Sub octave blend (-12 + dry 30 %)', '-12', '30 %', 'Discreet sub weight under the riff.', 'Léger poids sub sous le riff.'),
-    ('Power fifth below (-7 + dry)', '-7', '45 %', 'Adds the fifth below: instant power chord.', 'Ajoute la quinte inférieure : power chord instantané.'),
+    ('Octave doubler (-12)', '-12', '50 %', 'Fast octaver: guitar + octave below.', 'Octaver rapide : guitare + octave inférieure.'),
+    ('Sub octave (-12)', '-12', '30 %', 'Discreet sub weight under the riff.', 'Léger poids sub sous le riff.'),
+    ('Power fifth (-7)', '-7', '45 %', 'Adds the fifth below: instant power chord.', 'Ajoute la quinte inférieure : power chord instantané.'),
     ('Capo 1 / 2 / 3 / 5 / 7', '+1 ... +7', 'off', 'Electric capo without touching the guitar.', 'Capodastre électrique sans toucher la guitare.'),
-    ('Fourth up harmony (+5 + dry)', '+5', '40 %', 'Parallel fourth harmony.', 'Harmonie parallèle à la quarte.'),
-    ('Fifth up harmony (+7 + dry)', '+7', '40 %', 'Parallel fifth harmony.', 'Harmonie parallèle à la quinte.'),
+    ('Fourth harmony (+5)', '+5', '40 %', 'Parallel fourth harmony.', 'Harmonie parallèle à la quarte.'),
+    ('Fifth harmony (+7)', '+7', '40 %', 'Parallel fifth harmony.', 'Harmonie parallèle à la quinte.'),
     ('Octave up (+12)', '+12', 'off', 'One octave higher, solo lines.', 'Une octave plus haut, lignes de solo.'),
-    ('12-string (+12 + dry 30 %)', '+12', '30 %', 'Octave sparkle like a 12-string.', 'Brillance d\'octave façon 12 cordes.'),
+    ('12-string (+12)', '+12', '30 %', 'Octave sparkle like a 12-string.', 'Brillance d\'octave façon 12 cordes.'),
 ]
 
 def part(lang):
@@ -225,8 +225,8 @@ def part(lang):
              'du mix. Les états MIX et FAV sont affichés sur la ligne d\'état.')],
         ['7', T('Footswitch', 'Footswitch'), T('Effect on / bypass (buffered bypass, click-free). Toggles as soon as it is pressed.',
              'Effet actif / bypass (bypass bufférisé, sans clic). Bascule dès l\'appui.')],
-        ['8', T('Preset menu', 'Menu des presets'), T('Factory presets (section 6). Shows "Custom" when the sound matches none of them.',
-             'Presets d\'usine (section 6). Affiche « Custom » quand le son ne correspond à aucun.')],
+        ['8', T('Preset menu', 'Menu des presets'), T('On the pedal, above the display: factory presets (section 6) grouped by use. Shows "Custom" when the sound matches none of them.',
+             'Sur la pédale, au-dessus de l\'afficheur : presets d\'usine (section 6) groupés par usage. Affiche « Custom » quand le son ne correspond à aucun.')],
         ['9', T('Status line', "Ligne d'état"), T('Live values (pitch, mix %, MIX and FAV state, bypass), control hints on mouse-over, '
              'MIDI learn prompts.', 'Valeurs en direct (transposition, mix en %, état MIX et FAV, bypass), aide au survol, invite de MIDI learn.')],
         ['10 / 11', 'IN / OUT', T('Input on the right side, output on the left, as on the pedal.',
@@ -283,9 +283,9 @@ def part(lang):
                  "<i>Reset expression pedal travel</i>).")))
 
     s.append(P(T('Window', 'Fenêtre'), 'h2'))
-    s.append(P(T("The window opens at the default size of the Studio Wiga single pedals (380 x 479, like Echoflex and Holyverb) and cannot be made smaller. "
+    s.append(P(T("The window opens at 391 x 493 and cannot be made smaller. "
                  "Drag the bottom-right corner to enlarge it (aspect ratio kept), or right-click the background: Default / 125 % / 150 % / 200 %.",
-                 "La fenêtre s'ouvre à la taille par défaut des pédales simples Studio Wiga (380 x 479, comme Echoflex et Holyverb) et ne peut pas être réduite. "
+                 "La fenêtre s'ouvre en 391 x 493 et ne peut pas être réduite. "
                  "Tirez le coin inférieur droit pour l'agrandir (proportions conservées) ou clic droit sur le fond : Default / 125 % / 150 % / 200 %.")))
 
     s.append(PageBreak())
@@ -324,7 +324,7 @@ def part(lang):
         ['Bypass', T('buffered, 6 ms crossfade', 'bufférisé, fondu de 6 ms')],
         ['MIDI', T('MIDI learn on every control, latching / momentary switches, 14-bit CC, learned pedal travel',
                     'MIDI learn sur chaque commande, switchs à accrochage / momentanés, CC 14 bits, course de pédale apprise')],
-        [T('Window', 'Fenêtre'), T('380 x 479 default (minimum), resizable up to 200 %', '380 x 479 par défaut (minimum), redimensionnable jusqu\'à 200 %')],
+        [T('Window', 'Fenêtre'), T('391 x 493 default (minimum), resizable up to 200 %', '391 x 493 par défaut (minimum), redimensionnable jusqu\'à 200 %')],
     ], [42 * mm, CW - 42 * mm])]))
     return s
 

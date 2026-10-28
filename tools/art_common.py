@@ -11,7 +11,9 @@ opens at half the design space (380 x 479), the Studio Wiga single-pedal size.
 LOGICAL_W, LOGICAL_H = 760, 958        # design units
 HIDPI = 2                               # art rendered at 2x
 
-PRESET_BOX = (196.0, 14.0, 404.0, 34.0)      # design units: preset menu, top concrete strip
+SRC_CROP = (22.0, 50.0, 791.0, 1019.0)       # source area shown in the window (pedal enlarged)
+PRESET_BOX = (262.0, 107.0, 552.0, 147.0)    # source px: preset menu on the pedal, above the display
+DEFAULT_W, DEFAULT_H = 391, 493              # default (= minimum) window size
 STATUS_PILL = (231.0, 988.0, 586.0, 1017.0)  # source px: status pill (text erased, drawn live)
 
 # --------------------------------------------------------------- controls

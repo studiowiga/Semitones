@@ -16,7 +16,7 @@ Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 
 | FAV | rappel / sortie de la mémoire FAV | 0,9 s : mémorise le son actuel comme FAV |
 | Footswitch | effet / bypass (bascule à l'appui) | — |
 
-Anneau bleu autour du footswitch (couleur de l'afficheur) avec une lumière à longue traînée floue et halo qui tourne (un tour en 1,6 s) : allumé = effet actif, éteint = bypass, clignotant = réglage du mix. États MIX et FAV sur la ligne d'état. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 380 x 479 = minimum, comme Echoflex et Holyverb ; 125 %, 150 %, 200 %).
+Anneau bleu autour du footswitch (couleur de l'afficheur) avec une lumière à longue traînée floue et halo qui tourne (un tour en 1,6 s) : allumé = effet actif, éteint = bypass, clignotant = réglage du mix. États MIX et FAV sur la ligne d'état. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 391 x 493 = minimum ; 125 %, 150 %, 200 %).
 
 ## Moteur audio
 
@@ -36,6 +36,7 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 
 ## Historique
 
+- **1.4.0** — pédale agrandie, fenêtre 391 x 493 (taille par défaut et minimum) ; menu des presets placé sur la pédale au-dessus de l'écran ; textes plus grands (menu, liste, ligne d'état) et noms de presets raccourcis ; halo du footswitch légèrement adouci.
 - **1.3.1** — menu des presets fiabilisé : liste groupée (titres non sélectionnables), case jamais éditable ni prise au clavier ou à la molette, presets de l'hôte (Reaper) appliqués de façon sûre quel que soit le thread ; nom gravé réduit.
 - **1.3.0** — nouveau design (acier brossé sombre sur béton, afficheur à matrice de points), nom « Semitones » gravé, indicateurs MIX / FAV retirés de l'afficheur.
 - **1.2.0** — fenêtre et pédale réduites à la taille des pédales simples Studio Wiga (380 x 479 par défaut et minimum) ; anneau bleu avec lumière tournante à longue traînée.

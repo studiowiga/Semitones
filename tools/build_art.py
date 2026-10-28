@@ -131,15 +131,16 @@ Image.fromarray((rgb * 255).astype(np.uint8)).save(os.path.join(DESIGN, 'clean_p
 
 # ===================================================== 2. canvas (2x)
 CW, CH = LOGICAL_W * HIDPI, LOGICAL_H * HIDPI
-KX, KY = CW / W0, CH / H0
+cx0, cy0, cx1, cy1 = [int(round(v)) for v in SRC_CROP]
+KX, KY = CW / (cx1 - cx0), CH / (cy1 - cy0)
 K = 0.5 * (KX + KY)
-big = cv2.resize(rgb, (CW, CH), interpolation=cv2.INTER_LANCZOS4)
+big = cv2.resize(rgb[cy0:cy1, cx0:cx1], (CW, CH), interpolation=cv2.INTER_LANCZOS4)
 big = np.clip(big + 0.55 * (big - gblur(big, 1.6)), 0, 1)
 canvas = big
 
 
 def P2C(x, y):
-    return x * KX, y * KY
+    return (x - cx0) * KX, (y - cy0) * KY
 
 
 def P2L(x, y):
@@ -211,6 +212,19 @@ lit = base * (shade * ao * (1 - 0.55 * shadow))[..., None]
 lit = lit + 0.35 * np.clip(spec - spec_flat, 0, 1)[..., None]
 lit = np.clip(lit, 0, 1)
 canvas[Y0e:Y0e + EM.shape[0], X0e:X0e + EM.shape[1]] = lit
+
+# ===================================================== 3c. recessed slot for the preset menu
+sx0, sy0 = P2C(PRESET_BOX[0], PRESET_BOX[1])
+sx1, sy1 = P2C(PRESET_BOX[2], PRESET_BOX[3])
+rad = (sy1 - sy0) / 2
+slot_img = Image.new('L', (CW * 4, CH * 4), 0)
+ImageDraw.Draw(slot_img).rounded_rectangle([sx0 * 4, sy0 * 4, sx1 * 4, sy1 * 4], radius=rad * 4, fill=255)
+SL = np.asarray(slot_img.resize((CW, CH), Image.BOX)).astype(np.float32) / 255.0
+sl_shadow = np.clip(SL - shift(SL, 1.2 * HIDPI, 1.6 * HIDPI), 0, 1)
+sl_lip = np.clip(shift(SL, 0.9 * HIDPI, 1.1 * HIDPI) - SL, 0, 1)
+canvas = canvas * (1 - 0.62 * SL[..., None])
+canvas = canvas * (1 - 0.5 * gblur(sl_shadow, 1.0 * HIDPI)[..., None])
+canvas = np.clip(canvas + 0.16 * gblur(sl_lip, 0.5 * HIDPI)[..., None], 0, 1)
 
 # ===================================================== 4. dot-matrix display
 P = DOT_PITCH * K
@@ -284,7 +298,7 @@ dr = np.abs(dd - R)
 src_h = 8.0 * HIDPI
 E = (src_h ** 2 / (dr ** 2 + src_h ** 2)) ** 1.5
 E_wide = np.exp(-dr / (34 * HIDPI)) * 0.40
-illum = np.clip(E * 1.6 + E_wide, 0, 3) * (1 - band)
+illum = np.clip(E * 1.45 + E_wide * 0.9, 0, 3) * (1 - band)   # slightly softer halo
 lin = srgb2lin(FINAL)
 add = lin * illum[..., None] * COL[None, None, :] * 2.6 + illum[..., None] * COL * 0.03
 target = lin2srgb(lin + add)
@@ -333,7 +347,7 @@ hot = nblur(band2 * head, 2.2 * HIDPI)
 blue_s = lin2srgb(COL * 1.15)
 pipe_c = lin2srgb(COL * 1.6 + CORE * 0.35)
 hot_s = lin2srgb(CORE * 1.6)
-wc, wh, wt = np.clip(core * 1.05, 0, 1), np.clip(halo * 0.80, 0, 0.92), np.clip(hot * 0.9, 0, 1)
+wc, wh, wt = np.clip(core * 1.05, 0, 1), np.clip(halo * 0.70, 0, 0.85), np.clip(hot * 0.9, 0, 1)   # halo slightly softer
 ca = np.clip(1 - (1 - wc) * (1 - wh), 0, 1)
 crgb = (pipe_c[None, None, :] * wc[..., None] + blue_s[None, None, :] * (wh * (1 - wc))[..., None])
 crgb = crgb / np.maximum(ca[..., None], 1e-4)
@@ -429,10 +443,11 @@ lines.append('constexpr R hitLeft { %.2ff, %.2ff, %.2ff, %.2ff };' % rect_of(hit
 lines.append('constexpr R hitRight { %.2ff, %.2ff, %.2ff, %.2ff };' % rect_of(hit['right']))
 lines.append('constexpr R hitDisplay { %.2ff, %.2ff, %.2ff, %.2ff };' % rect_of(hit['display']))
 lines.append('constexpr R statusBox { %.2ff, %.2ff, %.2ff, %.2ff };   // status pill' % rect_of(hit['status']))
-lines.append('constexpr R presetBox { %.2ff, %.2ff, %.2ff, %.2ff };   // preset menu (top strip)' % PRESET_BOX)
+lines.append('constexpr R presetBox { %.2ff, %.2ff, %.2ff, %.2ff };   // preset menu on the pedal, above the display' % rect_of((*P2L(PRESET_BOX[0], PRESET_BOX[1]), *P2L(PRESET_BOX[2], PRESET_BOX[3]))))
 for k in ('mix', 'fav', 'foot'):
     lines.append('constexpr float %sX = %.2ff, %sY = %.2ff, %sR = %.2ff;' % (k, hit[k][0], k, hit[k][1], k, hit[k][2]))
-lines.append('constexpr float defaultScale = 0.5f;   // default window = 380 x 479 (simple pedal format, like Echoflex / Holyverb)')
+lines.append('constexpr int defaultW = %d, defaultH = %d;   // default (= minimum) window size' % (DEFAULT_W, DEFAULT_H))
+lines.append('constexpr float defaultScale = %.6ff;' % (DEFAULT_W / LOGICAL_W))
 lines.append('constexpr float ringX = %.3ff, ringY = %.3ff;  // light ring centre' % (FC[0] / HIDPI, FC[1] / HIDPI))
 lines.append('}')
 with open(os.path.join(ROOT, 'Layout.h'), 'w') as f:

@@ -10,7 +10,7 @@ M = os.path.join(ROOT, 'design', 'manual')
 os.makedirs(M, exist_ok=True)
 L = json.load(open(os.path.join(ROOT, 'assets', 'layout.json')))
 H_ = L['hit']
-px, py, pw, ph = 131.0, 58.0, 498.0, 855.0   # pedal body in design units (design v3)
+px, py, pw, ph = 118.0, 8.0, 545.0, 935.0   # pedal body in design units (design v3, enlarged)
 
 # ---------------------------------------------------------------- cover
 ui = Image.open(os.path.join(SHOTS, 'ui_plus4.png')).convert('RGB')
@@ -48,9 +48,9 @@ tag(5, H_['fav'][0] * s + 80, H_['fav'][1] * s + 26)
 fx, fy, fr = H_['foot']
 tag(6, fx * s + 150, fy * s - 120)       # light ring
 tag(7, fx * s, fy * s)                   # footswitch
-tag(8, 575 * s, 20 * s)
-tag(9, 120 * s, 939 * s)
-tag(10, (px + pw) * s + 40, (py + 436) * s)
-tag(11, px * s - 40, (py + 436) * s)
+tag(8, (L['hit']['display'][2] + 6) * s, 76 * s)
+tag(9, 190 * s, 942 * s)
+tag(10, (px + pw) * s + 40, (py + 475) * s)
+tag(11, px * s - 40, (py + 475) * s)
 im.save(os.path.join(M, 'overview.jpg'), quality=90)
 print('ok')

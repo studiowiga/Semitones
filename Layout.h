@@ -5,41 +5,42 @@ struct R { float x, y, w, h; };
 struct Sprite { const char* name; R r; };
 constexpr float W = 760.0f, H = 958.0f;
 constexpr Sprite sprites[] = {
-    { "seg_s_l", { 261.00f, 230.50f, 69.50f, 65.00f } },
-    { "seg_s_r", { 291.00f, 230.50f, 69.50f, 65.00f } },
-    { "seg_s_u", { 279.50f, 216.00f, 62.50f, 66.50f } },
-    { "seg_s_d", { 279.50f, 243.00f, 62.50f, 66.50f } },
-    { "seg_t_a", { 344.00f, 197.50f, 81.50f, 70.00f } },
-    { "seg_t_b", { 375.00f, 214.00f, 63.50f, 67.00f } },
-    { "seg_t_c", { 375.00f, 244.00f, 63.50f, 67.00f } },
-    { "seg_t_d", { 344.00f, 257.50f, 81.50f, 70.00f } },
-    { "seg_t_e", { 331.00f, 244.00f, 63.50f, 67.00f } },
-    { "seg_t_f", { 331.00f, 214.00f, 63.50f, 67.00f } },
-    { "seg_t_g", { 344.00f, 227.50f, 81.50f, 70.00f } },
-    { "seg_u_a", { 409.50f, 197.50f, 81.50f, 70.00f } },
-    { "seg_u_b", { 440.50f, 214.00f, 63.50f, 67.00f } },
-    { "seg_u_c", { 440.50f, 244.00f, 63.50f, 67.00f } },
-    { "seg_u_d", { 409.50f, 257.50f, 81.50f, 70.00f } },
-    { "seg_u_e", { 396.50f, 244.00f, 63.50f, 67.00f } },
-    { "seg_u_f", { 396.50f, 214.00f, 63.50f, 67.00f } },
-    { "seg_u_g", { 409.50f, 227.50f, 81.50f, 70.00f } },
-    { "ringlight", { 231.00f, 622.00f, 301.00f, 301.00f } },
-    { "ring_lit", { 231.00f, 622.00f, 301.00f, 301.00f } },
-    { "ring_comet", { 222.87f, 613.76f, 318.00f, 318.00f } },
-    { "press_mix", { 253.00f, 397.00f, 58.50f, 58.50f } },
-    { "press_fav", { 448.50f, 396.50f, 58.50f, 58.50f } },
-    { "press_left", { 159.00f, 228.00f, 71.50f, 75.50f } },
-    { "press_right", { 528.50f, 228.00f, 72.50f, 75.50f } },
-    { "press_foot", { 320.00f, 711.00f, 124.00f, 124.00f } },
+    { "seg_s_l", { 254.50f, 195.00f, 72.00f, 66.50f } },
+    { "seg_s_r", { 286.50f, 195.00f, 71.50f, 66.50f } },
+    { "seg_s_u", { 274.00f, 179.50f, 64.50f, 69.00f } },
+    { "seg_s_d", { 274.00f, 208.50f, 64.50f, 68.50f } },
+    { "seg_t_a", { 342.50f, 160.50f, 84.00f, 71.50f } },
+    { "seg_t_b", { 375.00f, 177.50f, 65.00f, 69.00f } },
+    { "seg_t_c", { 375.00f, 209.00f, 65.50f, 69.50f } },
+    { "seg_t_d", { 342.00f, 224.00f, 84.50f, 71.00f } },
+    { "seg_t_e", { 328.50f, 209.00f, 65.50f, 69.50f } },
+    { "seg_t_f", { 328.50f, 177.50f, 65.50f, 69.00f } },
+    { "seg_t_g", { 342.50f, 192.50f, 84.00f, 71.00f } },
+    { "seg_u_a", { 411.50f, 160.50f, 84.50f, 71.50f } },
+    { "seg_u_b", { 444.50f, 177.50f, 65.00f, 69.00f } },
+    { "seg_u_c", { 444.00f, 209.00f, 65.50f, 69.50f } },
+    { "seg_u_d", { 411.50f, 224.00f, 84.50f, 71.00f } },
+    { "seg_u_e", { 398.00f, 209.00f, 65.00f, 69.50f } },
+    { "seg_u_f", { 398.00f, 177.50f, 65.00f, 69.00f } },
+    { "seg_u_g", { 411.50f, 192.50f, 84.50f, 71.00f } },
+    { "ringlight", { 222.00f, 608.00f, 318.00f, 318.00f } },
+    { "ring_lit", { 222.00f, 608.00f, 318.00f, 318.00f } },
+    { "ring_comet", { 217.48f, 603.19f, 328.00f, 328.00f } },
+    { "press_mix", { 245.50f, 370.00f, 62.00f, 61.50f } },
+    { "press_fav", { 452.00f, 369.50f, 62.00f, 62.00f } },
+    { "press_left", { 146.00f, 191.50f, 75.50f, 79.50f } },
+    { "press_right", { 536.50f, 191.50f, 76.50f, 79.50f } },
+    { "press_foot", { 316.00f, 701.50f, 131.00f, 131.00f } },
 };
-constexpr R hitLeft { 159.11f, 228.27f, 71.13f, 74.84f };
-constexpr R hitRight { 528.82f, 228.27f, 72.07f, 74.84f };
-constexpr R hitDisplay { 245.22f, 149.69f, 271.43f, 231.08f };
-constexpr R statusBox { 216.21f, 924.32f, 332.27f, 27.13f };   // status pill
-constexpr R presetBox { 196.00f, 14.00f, 404.00f, 34.00f };   // preset menu (top strip)
-constexpr float mixX = 282.47f, mixY = 426.05f, mixR = 27.39f;
-constexpr float favX = 477.90f, favY = 425.67f, favR = 27.39f;
-constexpr float footX = 381.87f, footY = 772.76f, footR = 94.51f;
-constexpr float defaultScale = 0.5f;   // default window = 380 x 479 (simple pedal format, like Echoflex / Holyverb)
-constexpr float ringX = 381.872f, ringY = 772.762f;  // light ring centre
+constexpr R hitLeft { 146.27f, 191.80f, 75.11f, 79.09f };
+constexpr R hitRight { 536.64f, 191.80f, 76.10f, 79.09f };
+constexpr R hitDisplay { 237.19f, 108.75f, 286.61f, 244.20f };
+constexpr R statusBox { 206.55f, 927.35f, 350.85f, 28.67f };   // status pill
+constexpr R presetBox { 237.19f, 56.35f, 286.61f, 39.55f };   // preset menu on the pedal, above the display
+constexpr float mixX = 276.53f, mixY = 400.80f, mixR = 28.71f;
+constexpr float favX = 482.88f, favY = 400.40f, favR = 28.71f;
+constexpr float footX = 381.48f, footY = 767.19f, footR = 99.84f;
+constexpr int defaultW = 391, defaultH = 493;   // default (= minimum) window size
+constexpr float defaultScale = 0.514474f;
+constexpr float ringX = 381.482f, ringY = 767.191f;  // light ring centre
 }
