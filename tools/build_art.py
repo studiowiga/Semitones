@@ -169,9 +169,6 @@ def mirror_about(cx):
 
 
 # round parts: screws, MIX / FAV buttons, footswitch
-for (sx, sy) in SCREWS:
-    mx_, my_ = mirror_about(sx)
-    rgb = remap_from(ORIG, rgb, soft_disc(sx, sy, SCREW_R), mx_, my_)
 for (bxp, byp, brp) in (MIX_BTN, FAV_BTN):
     mx_, my_ = mirror_about(bxp)
     rgb = remap_from(ORIG, rgb, soft_disc(bxp, byp, brp + 5), mx_, my_)
@@ -242,6 +239,10 @@ ratio_o = np.clip(lo_m / np.maximum(lo, 1e-3), 0.5, 2.0)
 keep = soft_box(GLASS[0] - 1, GLASS[1] - 1, GLASS[2] + 1, GLASS[3] + 1, 3.0)
 ratio = plate * (ratio_p * (1 - keep) + keep) + (1 - plate) * ratio_o
 rgb = np.clip(rgb * ratio[..., None], 0, 1)
+# screws: erased here, rendered in 3D later (tools/screw_render.py)
+import screw_render
+for i, (sx, sy) in enumerate(SCREWS):
+    rgb = np.clip(screw_render.erase(rgb, sx, sy, SCREW_R + 7, 'inpaint' if i == 3 else ('from_below' if sy < 500 else 'from_above')), 0, 1)
 Image.fromarray((rgb * 255).astype(np.uint8)).save(os.path.join(DESIGN, 'clean_preview.png'))
 
 # ===================================================== 2. canvas (2x)
@@ -264,6 +265,11 @@ def P2L(x, y):
 
 
 yy, xx = np.mgrid[0:CH, 0:CW].astype(np.float32)
+
+# ===================================================== 2b. rendered screws (light from the left)
+for i, (sx, sy) in enumerate(SCREWS):
+    scx, scy = P2C(sx, sy)
+    canvas = screw_render.render(canvas, scx, scy, SCREW_HEAD_R * K, seed=11 + i)
 
 # ===================================================== 3. engraved name
 def text_mask(text, width_px, track, ss=4):
