@@ -125,6 +125,7 @@ SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     for (auto n : { "s_l", "s_r", "s_u", "s_d" }) segNames.push_back (std::string ("seg_") + n);
     for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_t_") + c);
     for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_u_") + c);
+    segNames.push_back ("seg_mix");   // MIX indicator dash, above the MIX button
 
     // preset menu
     // grouped list: section headers are titles only (not selectable), every
@@ -262,7 +263,10 @@ uint32_t SemitonesEditor::computeSegments() const
             digit ('u', a % 10);
         }
     }
-    juce::ignoreUnused (blinkOn);   // MIX / FAV: shown on the status line (no indicator in the display)
+    // MIX indicator: blue dash above the MIX button while MIX mode is on
+    // (flashes while the mix is being adjusted)
+    if ((e.mixOn && ! mixAdjust) || (mixAdjust && blinkOn))
+        set ("seg_mix");
     return m;
 }
 

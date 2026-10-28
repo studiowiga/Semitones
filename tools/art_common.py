@@ -14,7 +14,9 @@ HIDPI = 2                               # art rendered at 2x
 SRC_CROP = (22.0, 50.0, 791.0, 1019.0)       # source area shown in the window (pedal enlarged)
 PRESET_BOX = (262.0, 93.0, 552.0, 131.0)    # source px: preset menu on the pedal, above the display
 DEFAULT_W, DEFAULT_H = 391, 493              # default (= minimum) window size
-STATUS_PILL = (231.0, 988.0, 586.0, 1017.0)  # source px: status pill (text erased, drawn live)
+STATUS_PILL = (231.0, 988.0, 586.0, 1017.0)  # source px: original status pill (erased)
+STATUS_BIG = (196.0, 980.0, 620.0, 1018.0)   # source px: bigger status pill drawn in its place
+MIX_DASH = (283.0, 321.0, 383.0)             # x1, x2, y: MIX indicator dash, above the MIX button
 
 # --------------------------------------------------------------- controls
 MIX_BTN = (301.8, 455.4, 25.0)

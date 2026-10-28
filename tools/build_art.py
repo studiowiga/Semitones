@@ -23,6 +23,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from art_common import *  # noqa
+from art_common import _hseg
 
 OUT = os.path.join(ROOT, 'assets')
 DESIGN = os.path.join(ROOT, 'design')
@@ -126,6 +127,19 @@ pm_[py0 + 3:py1 - 3, px0 + 8:px1 - 8] = 1
 pm_ = gblur(pm_, 1.5)
 pill_col = np.median(rgb[py0 + 6:py1 - 6, px0 + 14:px1 - 14].reshape(-1, 3), 0)
 rgb = rgb * (1 - pm_[..., None]) + (0.5 * rgb + 0.5 * pill_col) * pm_[..., None]
+# bigger pill: dark smoked capsule with a soft drop shadow and a thin top highlight
+bx0_, by0_, bx1_, by1_ = STATUS_BIG
+ss_ = 4
+cap = Image.new('L', (W0 * ss_, H0 * ss_), 0)
+ImageDraw.Draw(cap).rounded_rectangle([bx0_ * ss_, by0_ * ss_, bx1_ * ss_, by1_ * ss_], radius=(by1_ - by0_) / 2 * ss_, fill=255)
+CAP = np.asarray(cap.resize((W0, H0), Image.BOX)).astype(np.float32) / 255.0
+sh_ = gblur(shift(CAP, 1.5, 2.5), 3.0)
+rgb = rgb * (1 - 0.55 * sh_[..., None] * (1 - CAP[..., None]))
+vgrad = np.clip((yy0 - by0_) / (by1_ - by0_), 0, 1)[..., None]
+cap_col = pill_col * 0.9 * (1.08 - 0.16 * vgrad) + 0.012
+rgb = rgb * (1 - CAP[..., None]) + cap_col * CAP[..., None]
+rim = np.clip(CAP - shift(CAP, 0, 1.2), 0, 1)
+rgb = np.clip(rgb + 0.10 * rim[..., None], 0, 1)
 rgb = np.clip(rgb, 0, 1)
 Image.fromarray((rgb * 255).astype(np.uint8)).save(os.path.join(DESIGN, 'clean_preview.png'))
 
@@ -251,6 +265,8 @@ def poly_c(poly):
 
 layers = all_layers()
 seg_masks = {name: poly_mask(CH, CW, poly_c(poly)) for name, poly in layers}
+mx1_, mx2_, my_ = MIX_DASH
+mix_mask = poly_mask(CH, CW, poly_c(_hseg(mx1_, mx2_, my_)))   # lit only (no ghost)
 ghost_all = np.zeros((CH, CW), np.float32)
 for v in seg_masks.values():
     ghost_all = np.maximum(ghost_all, v)
@@ -279,6 +295,7 @@ def lit_sprite(mask, name):
 sprites = {}
 for name, _ in layers:
     sprites['seg_' + name] = lit_sprite(seg_masks[name], 'seg_' + name)
+sprites['seg_mix'] = lit_sprite(mix_mask, 'seg_mix')
 
 FINAL = canvas.copy()
 fu8 = np.clip(FINAL * 255 + 0.5, 0, 255).astype(np.uint8)
@@ -422,7 +439,7 @@ hit = {
     'fav': (*P2L(fvx, fvy), fvr * K / HIDPI + 4),
     'foot': (*P2L(fx, fy), FOOT_COLLAR_R * K / HIDPI),
     'display': (*P2L(GLASS[0], GLASS[1]), *P2L(GLASS[2], GLASS[3])),
-    'status': (*P2L(STATUS_PILL[0], STATUS_PILL[1]), *P2L(STATUS_PILL[2], STATUS_PILL[3])),
+    'status': (*P2L(STATUS_BIG[0], STATUS_BIG[1]), *P2L(STATUS_BIG[2], STATUS_BIG[3])),
 }
 with open(os.path.join(OUT, 'layout.json'), 'w') as f:
     json.dump({'sprites': sprites, 'hit': hit}, f, indent=1)
