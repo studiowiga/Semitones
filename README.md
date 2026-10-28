@@ -36,6 +36,7 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 
 ## Historique
 
+- **1.4.4** — vis retirées de la pédale sans trace (brossage vertical reconstitué, raccord de luminosité invisible, rainure du coin bas-droit prolongée jusqu'au bord) ; rendu 3D des vis conservé en option (`RENDER_SCREWS`).
 - **1.4.3** — vis refaites en rendu 3D physiquement réaliste (vis CHC inox, face tournée, empreinte hexagonale, ombres douces), éclairées par la gauche comme le reste de la pédale (`tools/screw_render.py`).
 - **1.4.2** — point bleu rond au-dessus de MIX (au lieu du trait) ; éclairage de la pédale inversé, la lumière vient maintenant de la gauche (dégradé, vis, boutons, footswitch, flèches, reflet de l'écran).
 - **1.4.1** — trait bleu au-dessus de MIX dans l'afficheur quand le mode MIX est actif (clignote pendant le réglage du mix) ; ligne d'état agrandie.

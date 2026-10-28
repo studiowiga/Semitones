@@ -239,10 +239,23 @@ ratio_o = np.clip(lo_m / np.maximum(lo, 1e-3), 0.5, 2.0)
 keep = soft_box(GLASS[0] - 1, GLASS[1] - 1, GLASS[2] + 1, GLASS[3] + 1, 3.0)
 ratio = plate * (ratio_p * (1 - keep) + keep) + (1 - plate) * ratio_o
 rgb = np.clip(rgb * ratio[..., None], 0, 1)
-# screws: erased here, rendered in 3D later (tools/screw_render.py)
+# screws: erased here, rendered in 3D later (tools/screw_render.py). Each screw
+# receives the light of its own spot on the relit plate (left brighter than
+# right, top brighter than bottom, like the plate around it)
 import screw_render
+Lrel = rgb.mean(2)
+SCREW_LIGHT = []
+for (sx, sy) in SCREWS:
+    d_ = np.sqrt((xx0 - sx) ** 2 + (yy0 - sy) ** 2)
+    ring_ = (d_ > SCREW_R + 7) & (d_ < SCREW_R + 33) & (xx0 > PLATE[0] + 4) & (xx0 < PLATE[2] - 4) & (yy0 > PLATE[1] + 5) & (yy0 < PLATE[3] - 5)
+    SCREW_LIGHT.append(float(Lrel[ring_].mean()))
+ref_ = max(SCREW_LIGHT)
+SCREW_EXPOSURE = [1.35 * (v / ref_) ** 0.75 * (0.72 if sx > PLATE_CX else 1.0) for v, (sx, sy) in zip(SCREW_LIGHT, SCREWS)]
+print('screw exposure', [round(v, 2) for v in SCREW_EXPOSURE])
 for i, (sx, sy) in enumerate(SCREWS):
-    rgb = np.clip(screw_render.erase(rgb, sx, sy, SCREW_R + 7, 'inpaint' if i == 3 else ('from_below' if sy < 500 else 'from_above')), 0, 1)
+    mode_ = ('patch', 515, 905, 560, 968) if i == 3 else ('from_below' if sy < 500 else 'from_above')
+    rgb = np.clip(screw_render.erase(rgb, sx, sy, SCREW_R + (7 if i == 3 else 13), mode_, plate=PLATE,
+                                     channel=CHANNEL_BR if i == 3 else None), 0, 1)
 Image.fromarray((rgb * 255).astype(np.uint8)).save(os.path.join(DESIGN, 'clean_preview.png'))
 
 # ===================================================== 2. canvas (2x)
@@ -267,9 +280,10 @@ def P2L(x, y):
 yy, xx = np.mgrid[0:CH, 0:CW].astype(np.float32)
 
 # ===================================================== 2b. rendered screws (light from the left)
-for i, (sx, sy) in enumerate(SCREWS):
-    scx, scy = P2C(sx, sy)
-    canvas = screw_render.render(canvas, scx, scy, SCREW_HEAD_R * K, seed=11 + i)
+if RENDER_SCREWS:      # screws removed from the design (kept switchable)
+    for i, (sx, sy) in enumerate(SCREWS):
+        scx, scy = P2C(sx, sy)
+        canvas = screw_render.render(canvas, scx, scy, SCREW_HEAD_R * K, seed=11 + i, exposure=SCREW_EXPOSURE[i])
 
 # ===================================================== 3. engraved name
 def text_mask(text, width_px, track, ss=4):

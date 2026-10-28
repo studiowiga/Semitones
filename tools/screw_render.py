@@ -82,7 +82,7 @@ def _env(rv):
     return np.where(rv[..., 2] > -0.1, sky + box + fill, floor)
 
 
-def render(canvas, cx, cy, R, seed=0):
+def render(canvas, cx, cy, R, seed=0, exposure=1.0):
     """Render one screw into canvas (float RGB, sRGB) at (cx, cy) with head radius R (px)."""
     rng = np.random.default_rng(seed)
     ss = 3
@@ -151,7 +151,7 @@ def render(canvas, cx, cy, R, seed=0):
            + 0.03 * (nl_k * key * sh_self + nl_f * 0.4) * occ
            + aniso * side * key * 0.22 * sh_self + scr * 0.06) * tarn
     tint = np.array([0.95, 0.97, 1.02])
-    lin = lin[..., None] * tint
+    lin = lin[..., None] * tint * exposure          # light received at this spot of the pedal
     srgb = np.where(lin <= 0.0031308, lin * 12.92, 1.055 * np.power(np.clip(lin, 0, None), 1 / 2.4) - 0.055)
     srgb = np.clip(srgb * 0.80, 0, 1)
     alpha = (region >= 0).astype(np.float64)
@@ -190,52 +190,86 @@ def render(canvas, cx, cy, R, seed=0):
     return canvas
 
 
-def erase(img, cx, cy, r, mode='vertical'):
-    """Remove a screw from the source picture (float RGB). Brushing is vertical, so the
-    plate is rebuilt column by column from the rows just above and below the screw."""
+def _membrane(target, known, iters=500):
+    """Harmonic interpolation of target where known == 0 (Jacobi iterations)."""
+    out = target.copy()
+    unk = known == 0
+    if unk.any():
+        out[unk] = target[~unk].mean(0) if (~unk).any() else 0
+    for _ in range(iters):
+        out = np.where(unk[..., None], cv2.blur(out, (3, 3)), target)
+    return out
+
+
+def erase(img, cx, cy, r, mode='from_below', plate=None, channel=None):
+    """Remove a screw (and its shadow) from the source picture (float RGB).
+
+    * brushing is vertical: the hole is refilled with the plate rows just beyond
+      it, reflected (below for the top screws, above for the bottom ones);
+    * the brightness is then levelled to the surroundings with a harmonic
+      (seamless) correction computed only from plate pixels;
+    * the hole never touches the plate edges / bevels (plate box, inset);
+    * channel=(x0, y0, slope, above, below): a straight groove that ran under the
+      screw is extended through the hole, up to the plate edge.
+    """
     H, W = img.shape[:2]
-    y0, y1 = int(cy - r), int(cy + r) + 1
-    x0, x1 = int(cx - r), int(cx + r) + 1
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     d = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    m = np.clip((r - d) / 2.0 + 0.5, 0, 1)
-    if mode == 'inpaint':
-        u8 = (np.clip(img, 0, 1) * 255).astype(np.uint8)
-        mk = (d <= r + 1).astype(np.uint8) * 255
-        out = cv2.cvtColor(cv2.inpaint(cv2.cvtColor(u8, cv2.COLOR_RGB2BGR), mk, 6, cv2.INPAINT_TELEA), cv2.COLOR_BGR2RGB)
-        fill = out.astype(np.float32) / 255.0
+    inset = 4.0
+    if plate is not None:
+        px0, py0, px1, py1 = plate
+        inner = ((xx > px0 + inset) & (xx < px1 - inset) & (yy > py0 + inset) & (yy < py1 - inset))
     else:
-        # brushing is vertical: rebuild the disc by reflecting the plate rows just
-        # beyond it (below for the top screws, above for the bottom ones), then
-        # level the brightness to the opposite side with a smooth vertical blend
-        fill = img.copy()
-        ys = np.arange(y0, y1)
-        if mode == 'from_below':
-            src = np.clip(2 * y1 - ys, 0, H - 1)
-            other = img[max(0, y0 - 5):y0, x0:x1].mean(0)
-            near = img[y1:y1 + 5, x0:x1].mean(0)
-            t = ((y1 - ys) / max(1, y1 - y0))[:, None, None]
-        else:
-            src = np.clip(2 * y0 - ys, 0, H - 1)
-            other = img[y1:y1 + 5, x0:x1].mean(0)
-            near = img[max(0, y0 - 5):y0, x0:x1].mean(0)
-            t = ((ys - y0) / max(1, y1 - y0))[:, None, None]
-        patch = img[src][:, x0:x1]
-        fill[y0:y1, x0:x1] = patch
-    # low frequencies: smooth membrane interpolated from the surroundings (no seam);
-    # high frequencies: the reflected brushing
-    pad = int(r * 0.6) + 8
+        inner = np.ones((H, W), bool)
+    hole = (d <= r) & inner
+    band = np.zeros((H, W), bool)
+    if channel is not None:
+        lx0, ly0, slope, above, below = channel
+        u = np.array([1.0, slope]); u /= np.linalg.norm(u)
+        nrm_ = np.array([-u[1], u[0]])                        # points below the line
+        perp = (xx - lx0) * nrm_[0] + (yy - ly0) * nrm_[1]
+        along = (xx - cx) * u[0] + (yy - cy) * u[1]
+        band = (perp > -above) & (perp < below) & (along > -r - 2) & inner
+        hole = hole | band
+    ys_, xs_ = np.nonzero(hole)
+    y0, y1 = ys_.min(), ys_.max() + 1
+    x0, x1 = xs_.min(), xs_.max() + 1
+    fill = img.copy()
+    rows = np.arange(y0, y1)
+    skip = 16                      # skip the rows right next to the hole (old shadow tails)
+    if mode == 'from_below':
+        src = np.clip(2 * (y1 + skip) - rows, 0, H - 1)
+        fill[y0:y1, x0:x1] = img[src][:, x0:x1]
+    elif mode == 'from_above':
+        src = np.clip(2 * (y0 - skip) - rows, 0, H - 1)
+        fill[y0:y1, x0:x1] = img[src][:, x0:x1]
+    else:                          # ('patch', sx0, sy0, sx1, sy1): tile a clean plate patch
+        _, sx0, sy0, sx1, sy1 = mode
+        pt = img[int(sy0):int(sy1), int(sx0):int(sx1)]
+        reps = (int(np.ceil((y1 - y0) / pt.shape[0])) + 1, int(np.ceil((x1 - x0) / pt.shape[1])) + 1, 1)
+        fill[y0:y1, x0:x1] = np.tile(pt, reps)[:y1 - y0, :x1 - x0]
+    if channel is not None:
+        # extrude the groove along its own direction from the upstream side
+        pc = np.stack([xx - cx, yy - cy], -1)
+        a_ = pc[..., 0] * u[0] + pc[..., 1] * u[1]
+        q = np.clip(r * r - (pc[..., 0] ** 2 + pc[..., 1] ** 2 - a_ ** 2), 0, None)
+        t = a_ + np.sqrt(q) + 8.0           # start a little beyond the hole (old glare)
+        mx = (xx - t * u[0]).astype(np.float32); my = (yy - t * u[1]).astype(np.float32)
+        ext = cv2.remap(img.astype(np.float32), mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        bsoft = cv2.GaussianBlur(band.astype(np.float32), (0, 0), 1.2)
+        fill = fill * (1 - bsoft[..., None]) + ext * bsoft[..., None]
+    # seamless brightness: harmonic correction from the plate pixels around the hole
+    pad = 20
     bx0, by0, bx1, by1 = max(0, x0 - pad), max(0, y0 - pad), min(W, x1 + pad), min(H, y1 + pad)
-    sub = img[by0:by1, bx0:bx1]
-    msub = (d[by0:by1, bx0:bx1] <= r + 2).astype(np.float32)
-    low = cv2.GaussianBlur(sub, (0, 0), 5.0)
-    memb = low.copy()
-    ring = (msub == 0)
-    memb[msub > 0] = low[ring].mean(0)
-    for _ in range(400):
-        memb = np.where(msub[..., None] > 0, cv2.blur(memb, (5, 5)), low)
-    fs = fill[by0:by1, bx0:bx1]
-    hf = fs - cv2.GaussianBlur(fs, (0, 0), 5.0)
-    fill[by0:by1, bx0:bx1] = memb + hf
-    m = np.clip((r - d) / 6.0 + 0.5, 0, 1)
+    sub_img = cv2.GaussianBlur(img[by0:by1, bx0:bx1], (0, 0), 3.0)
+    sub_fill = cv2.GaussianBlur(fill[by0:by1, bx0:bx1], (0, 0), 3.0)
+    hsub = hole[by0:by1, bx0:bx1].astype(np.uint8)
+    known = (~hole[by0:by1, bx0:bx1]) & inner[by0:by1, bx0:bx1]
+    ring = (cv2.dilate(hsub, np.ones((25, 25), np.uint8)) > 0) & ~(cv2.dilate(hsub, np.ones((9, 9), np.uint8)) > 0) & known
+    diff = np.where(ring[..., None], sub_img - sub_fill, 0).astype(np.float32)
+    corr = _membrane(diff, ring.astype(np.uint8))
+    if channel is not None:
+        corr *= (1 - cv2.GaussianBlur(band[by0:by1, bx0:bx1].astype(np.float32), (0, 0), 2.0))[..., None]
+    fill[by0:by1, bx0:bx1] += corr * hole[by0:by1, bx0:bx1][..., None]
+    m = cv2.GaussianBlur(hole.astype(np.float32), (0, 0), 1.5) * inner
     return img * (1 - m[..., None]) + fill * m[..., None]
