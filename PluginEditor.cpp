@@ -254,8 +254,20 @@ void SemitonesEditor::paint (juce::Graphics& g)
     // footswitch light ring: light on the faceplate first, then the light pipe
     if (led[0] > 0.003f)
     {
+        // bright steady ring + light on the faceplate, then the rotating comet
         drawSprite (g, "ringlight", led[0]);
-        drawSprite (g, "ring_lit", led[0]);
+        drawSprite (g, "ring_lit", 0.85f * led[0]);
+        if (auto* sp = sprite ("ring_comet"))
+            if (sp->img.isValid())
+            {
+                const float s = scale();
+                const auto t = juce::AffineTransform::scale (sp->r.getWidth() * s / (float) sp->img.getWidth(),
+                                                             sp->r.getHeight() * s / (float) sp->img.getHeight())
+                                   .translated (sp->r.getX() * s, sp->r.getY() * s)
+                                   .rotated (ringAngle, Layout::ringX * s, Layout::ringY * s);
+                g.setOpacity (juce::jlimit (0.0f, 1.0f, led[0]));
+                g.drawImageTransformed (sp->img, t);
+            }
     }
 
     // pressed controls
@@ -455,10 +467,12 @@ void SemitonesEditor::timerCallback()
         led[0] += (target - led[0]) * (target > led[0] ? 0.45f : 0.28f);
         if (std::abs (led[0] - target) < 0.004f) led[0] = target;
     }
-    if (std::abs (led[0] - drawnLed[0]) > 0.002f)
+    // rotating light: one turn every 1.6 s while the ring is lit
+    ringAngle = (float) std::fmod (t / 1600.0 * juce::MathConstants<double>::twoPi, juce::MathConstants<double>::twoPi);
+    if (std::abs (led[0] - drawnLed[0]) > 0.002f || led[0] > 0.003f)
     {
         drawnLed[0] = led[0];
-        if (auto* sp = sprite ("ringlight")) askRepaint (toScreen (sp->r, 4.0f));
+        if (auto* sp = sprite ("ring_comet")) askRepaint (toScreen (sp->r, 4.0f));
     }
 
     segMask = computeSegments();

@@ -253,9 +253,9 @@ dr = np.abs(dd - R)
 src_h = 6.0 * HIDPI
 E = (src_h ** 2 / (dr ** 2 + src_h ** 2)) ** 1.5
 E_wide = np.exp(-dr / (26 * HIDPI)) * 0.35
-illum = np.clip(E * 1.6 + E_wide, 0, 3) * (1 - band)
+illum = np.clip(E * 3.0 + E_wide * 1.8, 0, 5) * (1 - band)
 lin = srgb2lin(FINAL)
-add = lin * illum[..., None] * COL[None, None, :] * 2.6 + illum[..., None] * COL * 0.02
+add = lin * illum[..., None] * COL[None, None, :] * 4.0 + illum[..., None] * COL * 0.05
 target = lin2srgb(lin + add)
 diff = np.clip(target - FINAL, 0, 1)
 a_ = np.clip(diff.max(2) / np.maximum(1 - FINAL.max(2), 0.02), 0, 1)
@@ -269,7 +269,7 @@ sprites['ringlight'] = (bx_ / HIDPI, by_ / HIDPI, 2 * box_r / HIDPI, 2 * box_r /
 relc = 1 - np.clip(np.abs(dd - R) / (RW / 2), 0, 1)
 pipe_lin = CORE[None, None, :] * (relc ** 1.5)[..., None] * 0.55 + COL[None, None, :] * (0.55 + 0.35 * (1 - relc))[..., None]
 pipe_s = lin2srgb(pipe_lin)
-bloom = gblur(band, 2.5 * HIDPI) * 0.55 + gblur(band, 7 * HIDPI) * 0.30
+bloom = gblur(band, 2.5 * HIDPI) * 1.1 + gblur(band, 7 * HIDPI) * 0.8 + gblur(band, 14 * HIDPI) * 0.5
 halo_rgb = lin2srgb(COL[None, None, :] * np.ones((CH, CW, 1)))
 a_h = np.clip(bloom * (1 - band), 0, 1)
 out_rgb = pipe_s * band[..., None] + halo_rgb * a_h[..., None]
@@ -277,6 +277,33 @@ out_a = np.clip(band + a_h, 0, 1)
 out_rgb = np.clip(np.where(out_a[..., None] > 1e-4, out_rgb / np.maximum(out_a[..., None], 1e-4), 0), 0, 1)
 to_img(np.concatenate([out_rgb, out_a[..., None]], -1)[by_:by_ + 2 * box_r, bx_:bx_ + 2 * box_r]).save(os.path.join(OUT, 'ring_lit.png'), optimize=True)
 sprites['ring_lit'] = sprites['ringlight']
+
+# rotating comet: bright head + decaying tail, drawn rotated around the ring
+# centre by the editor (square sprite centred on the ring centre)
+half = int(np.ceil((R + RW + 40 * HIDPI)))
+cxi, cyi = FC
+cs = 2 * half
+yy2, xx2 = np.mgrid[0:cs, 0:cs].astype(np.float32)
+ddx, ddy = xx2 - half, yy2 - half          # sprite centred exactly on the ring centre
+d2 = np.sqrt(ddx * ddx + ddy * ddy)
+ang = np.arctan2(ddy, ddx)                  # y down: increasing angle = clockwise
+phi = np.mod(0.0 - ang, 2 * np.pi)          # angle behind the head (head at angle 0)
+prof = np.exp(-phi / 1.0) * np.clip((2 * np.pi - phi) / 0.12, 0, 1)
+band2 = np.clip(RW / 2 - np.abs(d2 - R) + 0.6, 0, 1)
+relc2 = 1 - np.clip(np.abs(d2 - R) / (RW / 2), 0, 1)
+head = np.exp(-(phi / 0.30) ** 2)
+plin = (COL[None, None, :] * (0.85 + 0.3 * (1 - relc2))[..., None] * prof[..., None] * 2.6 +
+        CORE[None, None, :] * (relc2 ** 1.1 * (1.2 * prof + 2.6 * head))[..., None])
+ps = lin2srgb(plin)
+glow = (gblur(band2 * prof, 2.0 * HIDPI) * 2.2 + gblur(band2 * prof, 7 * HIDPI) * 1.8 +
+        gblur(band2 * prof, 16 * HIDPI) * 1.2 + gblur(band2 * head, 12 * HIDPI) * 3.0)
+ga = np.clip(glow * (1 - band2), 0, 1)
+pa = np.clip(band2 * np.clip(prof * 1.3 + head, 0, 1), 0, 1)
+crgb = ps * pa[..., None] + lin2srgb(COL * 1.6 + CORE * 0.6 * np.clip(head, 0, 1)[..., None])[...] * ga[..., None]
+ca = np.clip(pa + ga, 0, 1)
+crgb = np.clip(np.where(ca[..., None] > 1e-4, crgb / np.maximum(ca[..., None], 1e-4), 0), 0, 1)
+to_img(np.concatenate([crgb, ca[..., None]], -1)).save(os.path.join(OUT, 'ring_comet.png'), optimize=True)
+sprites['ring_comet'] = ((cxi - half) / HIDPI, (cyi - half) / HIDPI, cs / HIDPI, cs / HIDPI)
 
 # ===================================================== 8. pressed states
 def crop_box(x0, y0, x1, y1):
@@ -370,6 +397,7 @@ lines.append('constexpr R hitDisplay { %.2ff, %.2ff, %.2ff, %.2ff };' % rect_of(
 for k in ('mix', 'fav', 'foot'):
     lines.append('constexpr float %sX = %.2ff, %sY = %.2ff, %sR = %.2ff;' % (k, hit[k][0], k, hit[k][1], k, hit[k][2]))
 lines.append('constexpr R pedal { %.2ff, %.2ff, %.2ff, %.2ff };' % hit['pedal'])
+lines.append('constexpr float ringX = %.3ff, ringY = %.3ff;  // light ring centre' % (FC[0] / HIDPI, FC[1] / HIDPI))
 lines.append('}')
 with open(os.path.join(ROOT, 'Layout.h'), 'w') as f:
     f.write('\n'.join(lines) + '\n')

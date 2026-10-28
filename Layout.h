@@ -27,6 +27,7 @@ constexpr Sprite sprites[] = {
     { "dot_fav", { 467.00f, 323.00f, 37.00f, 37.50f } },
     { "ringlight", { 260.00f, 651.50f, 240.00f, 240.00f } },
     { "ring_lit", { 260.00f, 651.50f, 240.00f, 240.00f } },
+    { "ring_comet", { 257.94f, 649.22f, 245.00f, 245.00f } },
     { "press_mix", { 253.00f, 390.50f, 58.50f, 58.50f } },
     { "press_fav", { 448.50f, 390.50f, 58.50f, 58.50f } },
     { "press_left", { 153.00f, 213.00f, 74.50f, 84.50f } },
@@ -40,4 +41,5 @@ constexpr float mixX = 282.12f, mixY = 419.56f, mixR = 28.18f;
 constexpr float favX = 477.55f, favY = 419.56f, favR = 28.18f;
 constexpr float footX = 380.44f, footY = 771.72f, footR = 75.75f;
 constexpr R pedal { 100.00f, 40.00f, 559.50f, 880.00f };
+constexpr float ringX = 380.440f, ringY = 771.722f;  // light ring centre
 }

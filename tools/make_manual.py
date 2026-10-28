@@ -219,9 +219,9 @@ def part(lang):
              '(the display blinks) and engages it.',
              'Clic : rappelle / quitte le réglage FAV. Maintien (0,9 s) : mémorise le son actuel (transposition, mode MIX, mix) '
              'comme FAV (l\'afficheur clignote) et l\'active.')],
-        ['6', T('Light ring', 'Anneau lumineux'), T('Blue ring around the footswitch, the colour of the display: lit = effect on, off = bypass, '
+        ['6', T('Light ring', 'Anneau lumineux'), T('Bright blue ring around the footswitch, the colour of the display, with a light turning around it: lit = effect on, off = bypass, '
              'flashing = mix adjust. MIX and FAV are shown by the dots of the display.',
-             'Anneau bleu autour du footswitch, de la couleur de l\'afficheur : allumé = effet actif, éteint = bypass, clignotant = réglage '
+             'Anneau bleu très lumineux autour du footswitch, de la couleur de l\'afficheur, avec une lumière qui tourne : allumé = effet actif, éteint = bypass, clignotant = réglage '
              'du mix. MIX et FAV sont signalés par les points de l\'afficheur.')],
         ['7', T('Footswitch', 'Footswitch'), T('Effect on / bypass (buffered bypass, click-free). Toggles as soon as it is pressed.',
              'Effet actif / bypass (bypass bufférisé, sans clic). Bascule dès l\'appui.')],

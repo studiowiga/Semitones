@@ -95,6 +95,7 @@ private:
     // drawn state (redraw only what changed)
     uint32_t segMask = 0, drawnSegMask = 0xffffffffu;
     float led[1] { 0 }, drawnLed[1] { -1 };   // footswitch light ring
+    float ringAngle = 0.0f;                  // rotating light (radians)
     int drawnPressed = -1;
     juce::String drawnStatus;
     double blinkPhase = 0;
