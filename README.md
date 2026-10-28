@@ -16,7 +16,7 @@ Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 
 | FAV | rappel / sortie de la mémoire FAV | 0,9 s : mémorise le son actuel comme FAV |
 | Footswitch | effet / bypass (bascule à l'appui) | — |
 
-Lumière bleue à longue traînée floue et halo qui tourne autour du footswitch, anneau éteint (couleur de l'afficheur, un tour en 1,6 s) : elle tourne = effet actif, éteint = bypass, clignotant = réglage du mix. Points de l'afficheur : MIX en bas à gauche, FAV en bas à droite. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 760 x 958 = minimum, 125 %, 150 %).
+Anneau bleu autour du footswitch (couleur de l'afficheur) avec une lumière à longue traînée floue et halo qui tourne (un tour en 1,6 s) : allumé = effet actif, éteint = bypass, clignotant = réglage du mix. Points de l'afficheur : MIX en bas à gauche, FAV en bas à droite. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 760 x 958 = minimum, 125 %, 150 %).
 
 ## Moteur audio
 

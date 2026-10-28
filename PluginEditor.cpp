@@ -251,10 +251,12 @@ void SemitonesEditor::paint (juce::Graphics& g)
     else if (bgImage.isValid())
         g.drawImage (bgImage, bounds, juce::RectanglePlacement::stretchToFit);
 
-    // footswitch light: a glowing light turning around the (unlit) ring
+    // footswitch light: blue ring with a glowing light turning around it
     if (led[0] > 0.003f)
     {
-        // the ring itself stays off: only the rotating light and its halo
+        // steady blue ring + its light on the faceplate, then the rotating light and its halo
+        drawSprite (g, "ringlight", led[0]);
+        drawSprite (g, "ring_lit", led[0]);
         if (auto* sp = sprite ("ring_comet"))
             if (sp->img.isValid())
             {
