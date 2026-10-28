@@ -44,8 +44,8 @@ SIGN_H, SIGN_V = 33.0, 30.0
 
 # ------------------------------------------------------- engraved name
 ENGRAVE_TEXT = 'Semitones'
-ENGRAVE_C = (406.0, 607.0)
-ENGRAVE_W = 300.0
+ENGRAVE_C = (400.0, 607.0)
+ENGRAVE_W = 225.0
 ENGRAVE_TRACK = 0.035
 
 
