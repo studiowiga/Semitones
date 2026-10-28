@@ -36,7 +36,7 @@ constexpr R hitLeft { 146.27f, 191.80f, 75.11f, 79.09f };
 constexpr R hitRight { 536.64f, 191.80f, 76.10f, 79.09f };
 constexpr R hitDisplay { 237.19f, 108.75f, 286.61f, 244.20f };
 constexpr R statusBox { 206.55f, 927.35f, 350.85f, 28.67f };   // status pill
-constexpr R presetBox { 237.19f, 56.35f, 286.61f, 39.55f };   // preset menu on the pedal, above the display
+constexpr R presetBox { 237.19f, 42.51f, 286.61f, 37.57f };   // preset menu on the pedal, above the display
 constexpr float mixX = 276.53f, mixY = 400.80f, mixR = 28.71f;
 constexpr float favX = 482.88f, favY = 400.40f, favR = 28.71f;
 constexpr float footX = 381.48f, footY = 767.19f, footR = 99.84f;
