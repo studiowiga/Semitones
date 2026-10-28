@@ -246,8 +246,8 @@ Image.fromarray(fu8, 'RGB').save(os.path.join(OUT, 'background.jpg'), quality=94
 Image.fromarray(fu8, 'RGB').save(os.path.join(DESIGN, 'background_preview.png'))
 
 # ===================================================== 7. ring lit + faceplate light
-COL = np.array([0.10, 0.55, 1.00])          # display blue, linear
-CORE = np.array([0.70, 0.92, 1.00])
+COL = srgb2lin(LIT)                          # exactly the display blue (linear)
+CORE = srgb2lin(np.array([70.0, 185.0, 255.0]) / 255.0)   # hot centre, barely lighter
 # light emitted by the ring: falls with the distance to the ring circle
 dr = np.abs(dd - R)
 src_h = 6.0 * HIDPI
@@ -267,7 +267,7 @@ to_img(np.concatenate([colr, a_[..., None]], -1)[by_:by_ + 2 * box_r, bx_:bx_ + 
 sprites['ringlight'] = (bx_ / HIDPI, by_ / HIDPI, 2 * box_r / HIDPI, 2 * box_r / HIDPI)
 # the pipe itself: hot core, saturated edges, faint optical bloom
 relc = 1 - np.clip(np.abs(dd - R) / (RW / 2), 0, 1)
-pipe_lin = CORE[None, None, :] * (relc ** 1.5)[..., None] * 1.1 + COL[None, None, :] * (0.7 + 0.5 * (1 - relc))[..., None]
+pipe_lin = CORE[None, None, :] * (relc ** 1.5)[..., None] * 0.55 + COL[None, None, :] * (0.55 + 0.35 * (1 - relc))[..., None]
 pipe_s = lin2srgb(pipe_lin)
 bloom = gblur(band, 2.5 * HIDPI) * 0.55 + gblur(band, 7 * HIDPI) * 0.30
 halo_rgb = lin2srgb(COL[None, None, :] * np.ones((CH, CW, 1)))
