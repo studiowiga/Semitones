@@ -27,21 +27,22 @@ jobs:
           path: out
 
   macos:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
-      - name: Configure
-        run: cmake -B build -G Xcode
+      - name: Configure (binaire universel Intel + Apple Silicon)
+        run: cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
       - name: Build
-        run: cmake --build build --config Release --target Semitones_VST3 -- -quiet
-      - name: Package
+        run: cmake --build build --config Release --target Semitones_VST3 --parallel
+      - name: Signature locale (ad hoc) et archive
         run: |
-          mkdir -p out
-          cp -R "build/Semitones_artefacts/Release/VST3/Semitones.vst3" out/
-          codesign --force --deep --sign - out/Semitones.vst3 || true
-          [ -d docs ] && cp -R docs out/docs || true
-          cd out && zip -qry ../Semitones-VST3-macOS.zip .
+          cd build/Semitones_artefacts/Release/VST3
+          xattr -cr Semitones.vst3
+          codesign --force --deep --sign - Semitones.vst3
+          codesign --verify --deep --strict Semitones.vst3
+          ditto -c -k --sequesterRsrc --keepParent Semitones.vst3 "$GITHUB_WORKSPACE/Semitones-VST3-macOS.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: Semitones-VST3-macOS
           path: Semitones-VST3-macOS.zip
+          if-no-files-found: error
