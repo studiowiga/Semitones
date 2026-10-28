@@ -141,121 +141,6 @@ rgb = rgb * (1 - CAP[..., None]) + cap_col * CAP[..., None]
 rim = np.clip(CAP - shift(CAP, 0, 1.2), 0, 1)
 rgb = np.clip(rgb + 0.10 * rim[..., None], 0, 1)
 rgb = np.clip(rgb, 0, 1)
-# ---- 1d. relight: the design is lit from the right, the pedal must be lit from
-#          the left. Round parts are mirrored about their own centre, left/right
-#          pairs (arrows, jacks) are swapped and mirrored, the display glass is
-#          mirrored, then the broad light gradient is mirrored over the plate and
-#          the concrete.
-ORIG = rgb.copy()
-
-
-def remap_from(src, dst, mask, mapx, mapy):
-    warped = cv2.remap(src, mapx.astype(np.float32), mapy.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-    return dst * (1 - mask[..., None]) + warped * mask[..., None]
-
-
-def soft_disc(cx, cy, r, feather=2.5):
-    return np.clip((r - np.sqrt((xx0 - cx) ** 2 + (yy0 - cy) ** 2)) / feather + 0.5, 0, 1)
-
-
-def soft_box(x0, y0, x1, y1, feather=2.0):
-    fx_ = np.clip(np.minimum(xx0 - x0, x1 - xx0) / feather + 0.5, 0, 1)
-    fy_ = np.clip(np.minimum(yy0 - y0, y1 - yy0) / feather + 0.5, 0, 1)
-    return fx_ * fy_
-
-
-def mirror_about(cx):
-    return 2 * cx - xx0, yy0
-
-
-# round parts: screws, MIX / FAV buttons, footswitch
-for (bxp, byp, brp) in (MIX_BTN, FAV_BTN):
-    mx_, my_ = mirror_about(bxp)
-    rgb = remap_from(ORIG, rgb, soft_disc(bxp, byp, brp + 5), mx_, my_)
-fmx, fmy, fmr = FOOT_MIRROR
-mx_, my_ = mirror_about(fmx)
-rgb = remap_from(rgb.copy(), rgb, soft_disc(fmx, fmy, fmr, 4.0), mx_, my_)
-# arrows: each one takes the mirrored image of the other
-lcx = 0.5 * (ARROW_L_BOX[0] + ARROW_L_BOX[2]); rcx = 0.5 * (ARROW_R_BOX[0] + ARROW_R_BOX[2])
-srcA = rgb.copy()
-
-
-def tri_soft(pts, grow=1.16, feather=2.5):
-    cxp = sum(p[0] for p in pts) / 3; cyp = sum(p[1] for p in pts) / 3
-    big_ = [(cxp + (x - cxp) * grow, cyp + (y - cyp) * grow) for x, y in pts]
-    m_ = poly_mask(H0, W0, big_, 4)
-    return gblur(m_, feather)
-
-
-def ring_mean(box, pad=14):
-    x0, y0, x1, y1 = box
-    outer = soft_box(x0 - pad, y0 - pad, x1 + pad, y1 + pad, 1.0) - soft_box(x0, y0, x1, y1, 1.0)
-    return (srcA * np.clip(outer, 0, 1)[..., None]).reshape(-1, 3).sum(0) / max(np.clip(outer, 0, 1).sum(), 1.0)
-
-
-bgL, bgR = ring_mean(ARROW_L_BOX), ring_mean(ARROW_R_BOX)
-mxA = ((lcx + rcx) - xx0).astype(np.float32)
-warpedA = cv2.remap(srcA, mxA, yy0.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-mL = tri_soft(ARROW_L); mR = tri_soft(ARROW_R)
-# each arrow takes the mirrored arrow of the other side, levelled to its own surroundings
-rgb = rgb * (1 - mL[..., None]) + np.clip(warpedA * (bgL / np.maximum(bgR, 1e-3)), 0, 1) * mL[..., None]
-rgb = rgb * (1 - mR[..., None]) + np.clip(warpedA * (bgR / np.maximum(bgL, 1e-3)), 0, 1) * mR[..., None]
-# jacks: relit with the concrete by the broad gradient below
-# display glass: reflection moves to the left
-gcx = 0.5 * (GLASS[0] + GLASS[2])
-rgb = remap_from(rgb.copy(), rgb, soft_box(GLASS[0] - 2, GLASS[1] - 2, GLASS[2] + 2, GLASS[3] + 2, 2.0), 2 * gcx - xx0, yy0)
-
-# broad light gradient, mirrored (normalised low-pass, details untouched)
-L_ = rgb.mean(2)
-plate = soft_box(*PLATE, 3.0)
-excl = np.zeros((H0, W0), np.float32)
-for (sx, sy) in SCREWS:
-    excl = np.maximum(excl, soft_disc(sx, sy, SCREW_R + 6))
-for (bxp, byp, brp) in (MIX_BTN, FAV_BTN):
-    excl = np.maximum(excl, soft_disc(bxp, byp, brp + 8))
-excl = np.maximum(excl, soft_disc(fmx, fmy, fmr + 8))
-excl = np.maximum(excl, soft_box(GLASS[0] - 8, GLASS[1] - 8, GLASS[2] + 8, GLASS[3] + 8))
-excl = np.maximum(excl, soft_box(*ARROW_L_BOX)); excl = np.maximum(excl, soft_box(*ARROW_R_BOX))
-excl = np.maximum(excl, soft_box(PRESET_BOX[0] - 6, PRESET_BOX[1] - 6, PRESET_BOX[2] + 6, PRESET_BOX[3] + 6))
-
-
-def lowpass(weight, sig):
-    num = gblur(L_ * weight, sig)
-    den = gblur(weight, sig)
-    return num / np.maximum(den, 1e-4)
-
-
-wp = plate * (1 - excl)
-lp = lowpass(wp, 45.0)
-lp_m = cv2.remap(lp, (2 * PLATE_CX - xx0).astype(np.float32), yy0.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-ratio_p = np.clip(lp_m / np.maximum(lp, 1e-3), 0.55, 1.8)
-outside = 1 - soft_box(PLATE[0] - 4, PLATE[1] - 4, PLATE[2] + 4, PLATE[3] + 4, 6.0)
-wo = outside * (1 - np.maximum(soft_box(*JACK_L), soft_box(*JACK_R)))
-lo = lowpass(wo, 60.0)
-lo_m = cv2.remap(lo, (2 * PLATE_CX - xx0).astype(np.float32), yy0.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-ratio_o = np.clip(lo_m / np.maximum(lo, 1e-3), 0.5, 2.0)
-# smooth field over everything (parts were only left out of the estimate);
-# the display glass keeps its own (mirrored) shading
-keep = soft_box(GLASS[0] - 1, GLASS[1] - 1, GLASS[2] + 1, GLASS[3] + 1, 3.0)
-ratio = plate * (ratio_p * (1 - keep) + keep) + (1 - plate) * ratio_o
-rgb = np.clip(rgb * ratio[..., None], 0, 1)
-# screws: erased here, rendered in 3D later (tools/screw_render.py). Each screw
-# receives the light of its own spot on the relit plate (left brighter than
-# right, top brighter than bottom, like the plate around it)
-import screw_render
-Lrel = rgb.mean(2)
-SCREW_LIGHT = []
-for (sx, sy) in SCREWS:
-    d_ = np.sqrt((xx0 - sx) ** 2 + (yy0 - sy) ** 2)
-    ring_ = (d_ > SCREW_R + 7) & (d_ < SCREW_R + 33) & (xx0 > PLATE[0] + 4) & (xx0 < PLATE[2] - 4) & (yy0 > PLATE[1] + 5) & (yy0 < PLATE[3] - 5)
-    SCREW_LIGHT.append(float(Lrel[ring_].mean()))
-ref_ = max(SCREW_LIGHT)
-SCREW_EXPOSURE = [1.35 * (v / ref_) ** 0.75 * (0.72 if sx > PLATE_CX else 1.0) for v, (sx, sy) in zip(SCREW_LIGHT, SCREWS)]
-print('screw exposure', [round(v, 2) for v in SCREW_EXPOSURE])
-for i, (sx, sy) in enumerate(SCREWS):
-    mode_ = ('patch', 515, 905, 560, 968) if i == 3 else ('from_below' if sy < 500 else 'from_above')
-    rgb = np.clip(screw_render.erase(rgb, sx, sy, SCREW_R + (7 if i == 3 else 13), mode_, plate=PLATE,
-                                     channel=CHANNEL_BR if i == 3 else None), 0, 1)
 Image.fromarray((rgb * 255).astype(np.uint8)).save(os.path.join(DESIGN, 'clean_preview.png'))
 
 # ===================================================== 2. canvas (2x)
@@ -278,12 +163,6 @@ def P2L(x, y):
 
 
 yy, xx = np.mgrid[0:CH, 0:CW].astype(np.float32)
-
-# ===================================================== 2b. rendered screws (light from the left)
-if RENDER_SCREWS:      # screws removed from the design (kept switchable)
-    for i, (sx, sy) in enumerate(SCREWS):
-        scx, scy = P2C(sx, sy)
-        canvas = screw_render.render(canvas, scx, scy, SCREW_HEAD_R * K, seed=11 + i, exposure=SCREW_EXPOSURE[i])
 
 # ===================================================== 3. engraved name
 def text_mask(text, width_px, track, ss=4):
@@ -387,7 +266,7 @@ def poly_c(poly):
 layers = all_layers()
 seg_masks = {name: poly_mask(CH, CW, poly_c(poly)) for name, poly in layers}
 mdx, mdy, mdr = MIX_DOT
-mix_mask = disc(CH, CW, *P2C(mdx, mdy), mdr * K, 1.0)          # lit only (no ghost)
+mix_mask = disc(CH, CW, *P2C(mdx, mdy), mdr * K, 1.0)          # round MIX dot, lit only (no ghost)
 ghost_all = np.zeros((CH, CW), np.float32)
 for v in seg_masks.values():
     ghost_all = np.maximum(ghost_all, v)

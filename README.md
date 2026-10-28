@@ -36,9 +36,7 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 
 ## Historique
 
-- **1.4.4** — vis retirées de la pédale sans trace (brossage vertical reconstitué, raccord de luminosité invisible, rainure du coin bas-droit prolongée jusqu'au bord) ; rendu 3D des vis conservé en option (`RENDER_SCREWS`).
-- **1.4.3** — vis refaites en rendu 3D physiquement réaliste (vis CHC inox, face tournée, empreinte hexagonale, ombres douces), éclairées par la gauche comme le reste de la pédale (`tools/screw_render.py`).
-- **1.4.2** — point bleu rond au-dessus de MIX (au lieu du trait) ; éclairage de la pédale inversé, la lumière vient maintenant de la gauche (dégradé, vis, boutons, footswitch, flèches, reflet de l'écran).
+- **1.4.5** — retour au visuel de la 1.4.1 (éclairage d'origine, vis d'origine) ; seul changement : un point bleu rond au-dessus de MIX dans l'afficheur à la place du trait. Les essais 1.4.2 à 1.4.4 sont abandonnés.
 - **1.4.1** — trait bleu au-dessus de MIX dans l'afficheur quand le mode MIX est actif (clignote pendant le réglage du mix) ; ligne d'état agrandie.
 - **1.4.0** — pédale agrandie, fenêtre 391 x 493 (taille par défaut et minimum) ; menu des presets placé sur la pédale au-dessus de l'écran ; textes plus grands (menu, liste, ligne d'état) et noms de presets raccourcis ; halo du footswitch légèrement adouci.
 - **1.3.1** — menu des presets fiabilisé : liste groupée (titres non sélectionnables), case jamais éditable ni prise au clavier ou à la molette, presets de l'hôte (Reaper) appliqués de façon sûre quel que soit le thread ; nom gravé réduit.
