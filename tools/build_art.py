@@ -288,7 +288,7 @@ ddx, ddy = xx2 - half, yy2 - half          # sprite centred exactly on the ring 
 d2 = np.sqrt(ddx * ddx + ddy * ddy)
 ang = np.arctan2(ddy, ddx)                  # y down: increasing angle = clockwise
 phi = np.mod(0.0 - ang, 2 * np.pi)          # angle behind the head (head at angle 0)
-prof = np.exp(-phi / 1.7) * np.clip(1 - phi / (1.55 * np.pi), 0, 1) ** 1.6   # long trail fading out, rest of the ring off
+prof = np.exp(-phi / 3.4) * np.clip(1 - phi / (1.9 * np.pi), 0, 1) ** 1.15   # very long trail (almost a full turn), fading out
 head = np.exp(-(phi / 0.38) ** 2) + np.exp(-((2 * np.pi - phi) / 0.14) ** 2) * 0.8
 band2 = np.clip(RW / 2 - np.abs(d2 - R) + 0.6, 0, 1)
 src_ = band2 * np.clip(prof + 0.8 * head, 0, 1.6)
