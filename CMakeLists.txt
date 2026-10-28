@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Semitones VERSION 1.3.0 LANGUAGES C CXX)
+project(Semitones VERSION 1.3.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -84,7 +84,7 @@ if(SEMITONES_BUILD_RENDER)
     target_compile_definitions(SemitonesRender PRIVATE ${SEMITONES_DEFS}
         JUCE_USE_XRANDR=0 JUCE_USE_XINERAMA=0 JUCE_USE_XCURSOR=0 JUCE_USE_XSHM=0
         JucePlugin_Name="Semitones" JucePlugin_IsSynth=0 JucePlugin_WantsMidiInput=1
-        JucePlugin_ProducesMidiOutput=0 JucePlugin_IsMidiEffect=0)
+        JucePlugin_ProducesMidiOutput=0 JucePlugin_IsMidiEffect=0 JUCE_MODAL_LOOPS_PERMITTED=1)
     target_link_libraries(SemitonesRender PRIVATE SemitonesAssets
         juce::juce_audio_utils juce::juce_dsp juce::juce_recommended_config_flags)
 endif()

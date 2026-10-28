@@ -132,6 +132,7 @@ private:
     std::atomic<bool>  pendingSet[5];
     std::atomic<int>   pendingSemiDelta { 0 };
     std::atomic<bool>  pendingFavExit { false };
+    std::atomic<int>   pendingPreset { -1 };
 
     // smoothing state (audio thread)
     float gOn = 1.0f, gPass = 1.0f, gMixOn = 0.0f;

@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <thread>
 
 struct Shot
 {
@@ -76,6 +77,76 @@ int main (int argc, char** argv)
     // ---------------------------------------------------------------- pictures
     std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
     auto* e = dynamic_cast<SemitonesEditor*> (ed.get());
+    // ---------------------------------------------------------------- presets
+    {
+        int okHost = 0, okBox = 0;
+        const auto& list = SemitonesProcessor::factoryPresets();
+        auto matches = [&] (const FactoryPreset& p)
+        {
+            return (int) std::lround (proc.apvts.getRawParameterValue (ParamID::semitones)->load()) == p.semis
+                && (proc.apvts.getRawParameterValue (ParamID::mixOn)->load() > 0.5f) == p.mixOn
+                && (! p.mixOn || std::abs (proc.apvts.getRawParameterValue (ParamID::mix)->load() - p.mix) < 0.5f)
+                && proc.apvts.getRawParameterValue (ParamID::fav)->load() < 0.5f;
+        };
+        for (int i = 0; i < (int) list.size(); ++i)
+        {
+            std::thread th ([&] { proc.setCurrentProgram (i); });     // host thread
+            th.join();
+            proc.flushMidiQueue();
+            okHost += matches (list[(size_t) i]) ? 1 : 0;
+        }
+        juce::ComboBox* box = nullptr;
+        for (auto* c : e->getChildren())
+            if (auto* cb = dynamic_cast<juce::ComboBox*> (c)) box = cb;
+        for (int i = (int) list.size() - 1; i >= 0; --i)
+        {
+            setP (proc, ParamID::fav, 1.0f);                         // even from FAV
+            box->setSelectedId (i + 1, juce::sendNotificationSync);
+            okBox += matches (list[(size_t) i]) ? 1 : 0;
+            e->settleForSnapshot();                                  // display sync keeps the choice
+            if (box->getSelectedId() != i + 1) printf ("preset %d: box shows %d\n", i + 1, box->getSelectedId());
+        }
+        int headings = 0;
+        auto* menu = box->getRootMenu();
+        for (juce::PopupMenu::MenuItemIterator it (*menu); it.next();)
+            if (it.getItem().isSectionHeader) ++headings;
+        // picture of the preset menu, drawn with the plug-in's own look and feel
+        {
+            auto& lf = e->getLookAndFeel();
+            const int w = 300, itemH = 24, headH = 26;
+            int h = 8;
+            for (juce::PopupMenu::MenuItemIterator it (*menu); it.next();)
+                h += it.getItem().isSectionHeader ? headH : itemH;
+            juce::Image img (juce::Image::ARGB, w * 2, h * 2, true);
+            juce::Graphics g (img);
+            g.addTransform (juce::AffineTransform::scale (2.0f));
+            lf.drawPopupMenuBackground (g, w, h);
+            int y = 4;
+            const int sel = 10;
+            for (juce::PopupMenu::MenuItemIterator it (*menu); it.next();)
+            {
+                const auto& item = it.getItem();
+                if (item.isSectionHeader)
+                {
+                    lf.drawPopupMenuSectionHeader (g, { 0, y, w, headH }, item.text);
+                    y += headH;
+                }
+                else
+                {
+                    lf.drawPopupMenuItem (g, { 0, y, w, itemH }, false, true, item.itemID == sel + 2, item.itemID == sel,
+                                          false, item.text, {}, nullptr, nullptr);
+                    y += itemH;
+                }
+            }
+            juce::File f = outDir.getChildFile ("ui_preset_menu.png");
+            f.deleteFile();
+            juce::FileOutputStream os (f);
+            juce::PNGImageFormat().writeImageToStream (img, os);
+            printf ("menu picture %dx%d\n", img.getWidth(), img.getHeight());
+        }
+        printf ("presets: host %d/%d  menu %d/%d  headings %d  editable %d\n", okHost, (int) list.size(), okBox, (int) list.size(),
+                headings, (int) box->isTextEditable());
+    }
     const Shot shots[] = {
         { "ui_default.png",        0, false, 50, false, true,  false, false, false, false, false, false },
         { "ui_plus4.png",          4, false, 50, false, true,  false, false, false, false, false, false },

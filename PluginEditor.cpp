@@ -66,6 +66,8 @@ juce::Font SemitonesLook::getComboBoxFont (juce::ComboBox& b) { return uiFont (j
 void SemitonesLook::positionComboBoxText (juce::ComboBox& box, juce::Label& label)
 {
     label.setBounds (box.getHeight() / 2, 1, box.getWidth() - box.getHeight() * 2, box.getHeight() - 2);
+    label.setInterceptsMouseClicks (false, false);
+    label.setEditable (false, false, false);
     label.setFont (getComboBoxFont (box));
     label.setJustificationType (juce::Justification::centred);
 }
@@ -121,10 +123,33 @@ SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_u_") + c);
 
     // preset menu
+    // grouped list: section headers are titles only (not selectable), every
+    // preset item is selectable; the box itself is never an editable text field
     const auto& presets = SemitonesProcessor::factoryPresets();
     for (int i = 0; i < (int) presets.size(); ++i)
-        presetBox.addItem (presets[(size_t) i].name, i + 1);
+    {
+        const auto& p = presets[(size_t) i];
+        const auto& prev = presets[(size_t) juce::jmax (0, i - 1)];
+        auto group = [] (const FactoryPreset& fp)
+        {
+            if (fp.semis == 0) return 0;
+            if (fp.semis < 0 && ! fp.mixOn) return 1;
+            if (fp.semis < 0) return 2;
+            if (! fp.mixOn && fp.semis < 12) return 3;
+            return 4;
+        };
+        static const char* titles[] = { "Standard", "Tune down", "Blend below (MIX)", "Capo up", "Harmonies / octave up" };
+        if (i == 0 || group (p) != group (prev))
+            presetBox.addSectionHeading (titles[group (p)]);
+        presetBox.addItem (p.name, i + 1);
+    }
+    presetBox.setEditableText (false);
     presetBox.setTextWhenNothingSelected ("Custom");
+    presetBox.setTextWhenNoChoicesAvailable ("Custom");
+    presetBox.setWantsKeyboardFocus (false);
+    presetBox.setMouseClickGrabsKeyboardFocus (false);
+    presetBox.setScrollWheelEnabled (false);
+    presetBox.setTooltip ("Factory presets");
     presetBox.onChange = [this]
     {
         const int id = presetBox.getSelectedId();

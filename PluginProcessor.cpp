@@ -330,6 +330,8 @@ void SemitonesProcessor::handleMidi (const juce::MidiMessage& m, int samplePos)
 // message thread
 void SemitonesProcessor::timerCallback()
 {
+    const int pp = pendingPreset.exchange (-1);
+    if (pp >= 0) applyPreset (pp);
     if (pendingFavExit.exchange (false) && pFav->load() > 0.5f)
         exitFavKeeping();
     const int d = pendingSemiDelta.exchange (0);
@@ -405,11 +407,11 @@ int SemitonesProcessor::getNumPrograms() { return (int) factoryPresets().size();
 
 void SemitonesProcessor::setCurrentProgram (int index)
 {
-    if (juce::MessageManager::getInstanceWithoutCreating() != nullptr
-        && juce::MessageManager::getInstance()->isThisTheMessageThread())
-        applyPreset (index);
-    else
-        currentPreset = index;
+    // hosts may call this from any thread: the preset is applied by the
+    // message-thread timer (never a parameter change from another thread)
+    if (index < 0 || index >= (int) factoryPresets().size()) return;
+    currentPreset = index;
+    pendingPreset.store (index, std::memory_order_release);
 }
 
 const juce::String SemitonesProcessor::getProgramName (int index)
