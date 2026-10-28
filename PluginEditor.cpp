@@ -119,8 +119,6 @@ SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     for (auto n : { "s_l", "s_r", "s_u", "s_d" }) segNames.push_back (std::string ("seg_") + n);
     for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_t_") + c);
     for (char c = 'a'; c <= 'g'; ++c) segNames.push_back (std::string ("seg_u_") + c);
-    segNames.push_back ("dot_mix");
-    segNames.push_back ("dot_fav");
 
     // preset menu
     const auto& presets = SemitonesProcessor::factoryPresets();
@@ -235,9 +233,7 @@ uint32_t SemitonesEditor::computeSegments() const
             digit ('u', a % 10);
         }
     }
-    if (e.mixOn || mixAdjust)
-        if (! mixAdjust || blinkOn) set ("dot_mix");
-    if (e.fav) set ("dot_fav");
+    juce::ignoreUnused (blinkOn);   // MIX / FAV: shown on the status line (no indicator in the display)
     return m;
 }
 
@@ -286,16 +282,18 @@ void SemitonesEditor::paint (juce::Graphics& g)
             drawSprite (g, segNames[i]);
     g.setOpacity (1.0f);
 
-    // top bar label + status line
+    // preset label + status line (inside the pill of the design)
     const float s = scale();
-    g.setFont (look.uiFont (19.0f * s));
+    const auto pb = Layout::presetBox;
+    g.setFont (look.uiFont (17.0f * s));
     g.setColour (kInkDim);
-    g.drawText ("PRESET", juce::Rectangle<float> (0, 0, 172.0f * s, Layout::topBar * s), juce::Justification::centredRight);
+    g.drawText ("PRESET", juce::Rectangle<float> (0, pb.y * s, (pb.x - 12.0f) * s, pb.h * s), juce::Justification::centredRight);
     const auto status = statusText();
-    auto sr = juce::Rectangle<float> (0, (Layout::H - Layout::bottomBar) * s, (float) getWidth(), Layout::bottomBar * s);
-    g.setFont (look.uiFont (22.0f * s));
-    g.setColour (kInk.withAlpha (0.92f));
-    g.drawFittedText (status, sr.reduced (16.0f * s, 0).toNearestInt(), juce::Justification::centred, 1, 0.7f);
+    const auto st = Layout::statusBox;
+    auto sr = juce::Rectangle<float> (st.x * s, st.y * s, st.w * s, st.h * s);
+    g.setFont (look.uiFont (18.5f * s));
+    g.setColour (juce::Colour (0xff8e9196));
+    g.drawFittedText (status, sr.reduced (14.0f * s, 0).toNearestInt(), juce::Justification::centred, 1, 0.65f);
 }
 
 juce::String SemitonesEditor::statusText() const
@@ -335,7 +333,7 @@ void SemitonesEditor::resized()
 {
     // never setSize() here (Windows scaling loops) - the constrainer does the job
     const float s = scale();
-    presetBox.setBounds (juce::Rectangle<float> (184.0f * s, 9.0f * s, 392.0f * s, 38.0f * s).toNearestInt());
+    presetBox.setBounds (juce::Rectangle<float> (Layout::presetBox.x * s, Layout::presetBox.y * s, Layout::presetBox.w * s, Layout::presetBox.h * s).toNearestInt());
     resizeSettle = 4;
 }
 
@@ -498,7 +496,7 @@ void SemitonesEditor::timerCallback()
     if (status != drawnStatus)
     {
         drawnStatus = status;
-        askRepaint (toScreen ({ 0, Layout::H - Layout::bottomBar, Layout::W, Layout::bottomBar }, 0.0f));
+        askRepaint (toScreen ({ Layout::statusBox.x, Layout::statusBox.y, Layout::statusBox.w, Layout::statusBox.h }, 2.0f));
     }
     syncPresetBox();
 }

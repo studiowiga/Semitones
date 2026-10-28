@@ -10,33 +10,20 @@ M = os.path.join(ROOT, 'design', 'manual')
 os.makedirs(M, exist_ok=True)
 L = json.load(open(os.path.join(ROOT, 'assets', 'layout.json')))
 H_ = L['hit']
-px, py, pw, ph = H_['pedal']
+px, py, pw, ph = 131.0, 58.0, 498.0, 855.0   # pedal body in design units (design v3)
 
 # ---------------------------------------------------------------- cover
-ui = Image.open(os.path.join(SHOTS, 'ui_plus4.png')).convert('RGBA')
-box = (int(px * 2) - 40, int(py * 2), int((px + pw) * 2) + 40, int((py + ph) * 2) + 2)
-ped = ui.crop(box)
-a = np.asarray(ped.convert('L')).astype(np.uint8)
-dark = (a < 38).astype(np.uint8)
-mask = np.zeros((dark.shape[0] + 2, dark.shape[1] + 2), np.uint8)
-for seed in [(0, 0), (dark.shape[1] - 1, 0), (0, dark.shape[0] - 1), (dark.shape[1] - 1, dark.shape[0] - 1)]:
-    cv2.floodFill(dark.copy() * 255, mask, seed, 128)
-alpha = 1 - mask[1:-1, 1:-1]
-alpha = cv2.morphologyEx(alpha, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-alpha = cv2.GaussianBlur(alpha.astype(np.float32), (0, 0), 0.8)
-ped.putalpha(Image.fromarray((alpha * 255).astype(np.uint8)))
-W, H = ped.width + 300, int(ped.height * 1.42)
-cov = Image.new('RGBA', (W, H), (0, 0, 0, 255))
-halo = Image.new('L', (W, H), 0)
-ImageDraw.Draw(halo).ellipse([W * 0.12, H * 0.05, W * 0.88, H * 0.72], fill=55)
-halo = halo.filter(ImageFilter.GaussianBlur(120))
-cov.alpha_composite(Image.merge('RGBA', [Image.new('L', (W, H), 57), Image.new('L', (W, H), 160), Image.new('L', (W, H), 255), halo]))
-ox, oy = (W - ped.width) // 2, 40
-cov.alpha_composite(ped, (ox, oy))
-refl = ped.transpose(Image.FLIP_TOP_BOTTOM).crop((0, 0, ped.width, int(ped.height * 0.35)))
-g = np.linspace(0.28, 0, refl.height)[:, None]
-refl.putalpha(Image.fromarray((np.asarray(refl)[..., 3] * g).astype(np.uint8)))
-cov.alpha_composite(refl, (ox, oy + ped.height + 6))
+ui = Image.open(os.path.join(SHOTS, 'ui_plus4.png')).convert('RGB')
+# design v3: the pedal sits on concrete; crop away the preset / status strips and
+# fade the edges to black so it merges with the black cover page
+crop = ui.crop((int(px * 2) - 120, int(py * 2) - 30, int((px + pw) * 2) + 120, int((py + ph) * 2) + 30))
+a = np.asarray(crop).astype(np.float32) / 255.0
+hh, ww = a.shape[:2]
+yv, xv = np.mgrid[0:hh, 0:ww].astype(np.float32)
+fx_ = np.clip(np.minimum(xv, ww - 1 - xv) / 110.0, 0, 1)
+fy_ = np.clip(np.minimum(yv, hh - 1 - yv) / 110.0, 0, 1)
+fade = (fx_ * fy_) ** 1.3
+cov = Image.fromarray((a * fade[..., None] * 255).astype(np.uint8))
 cov.convert('RGB').save(os.path.join(M, 'cover_pedal.jpg'), quality=92)
 
 # ---------------------------------------------------------------- annotated overview
