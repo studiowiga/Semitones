@@ -49,7 +49,7 @@ public:
     void settleForSnapshot();
 
 private:
-    enum class Hit { none, left, right, mix, fav, foot, display, led, background };
+    enum class Hit { none, left, right, mix, fav, foot, display, background };
 
     struct Sprite { juce::Image img; juce::Rectangle<float> r; };
 
@@ -94,7 +94,7 @@ private:
 
     // drawn state (redraw only what changed)
     uint32_t segMask = 0, drawnSegMask = 0xffffffffu;
-    float led[3] { 0, 0, 0 }, drawnLed[3] { -1, -1, -1 };
+    float led[1] { 0 }, drawnLed[1] { -1 };   // footswitch light ring
     int drawnPressed = -1;
     juce::String drawnStatus;
     double blinkPhase = 0;

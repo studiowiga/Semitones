@@ -1,10 +1,10 @@
 # Semitones (Studio Wiga)
 
-Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 à +12 demi-tons à très faible latence (« capodastre numérique »), mode **MIX** (signal transposé + signal direct, 0 à 100 %) et mémoire **FAV**. Format pédale simple, Windows et macOS.
+Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 à +12 demi-tons à très faible latence (« capodastre numérique »), mode **MIX** (signal transposé + signal direct, 0 à 100 %) et mémoire **FAV**. Format pédale simple, Windows et macOS. Design Studio Wiga en acier brossé avec anneau lumineux bleu autour du footswitch.
 
 ![Semitones](docs/screenshot.png)
 
-- Notice EN / FR : `docs/Semitones_Manual_EN-FR_v1.0.0.pdf`
+- Notice EN / FR : `docs/Semitones_Manual_EN-FR_v1.1.0.pdf`
 - Builds prêts à installer : onglet **Actions** > dernier run > artefacts `Semitones-VST3-Windows` / `Semitones-VST3-macOS`
 
 ## Fonctionnement (comme la pédale)
@@ -16,7 +16,7 @@ Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 
 | FAV | rappel / sortie de la mémoire FAV | 0,9 s : mémorise le son actuel comme FAV |
 | Footswitch | effet / bypass (bascule à l'appui) | — |
 
-LED : rouge = transposition 100 %, bleue = mode MIX, verte = FAV, éteinte = bypass. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 760 x 958 = minimum, 125 %, 150 %).
+Anneau bleu autour du footswitch (couleur de l'afficheur) : allumé = effet actif, éteint = bypass, clignotant = réglage du mix. Points de l'afficheur : MIX en bas à gauche, FAV en bas à droite. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 760 x 958 = minimum, 125 %, 150 %).
 
 ## Moteur audio
 
@@ -32,8 +32,9 @@ JUCE 8.0.15, `setOpaque`, rendu logiciel forcé sous Windows (réappliqué si le
 cmake -B build && cmake --build build --config Release --target Semitones_VST3
 ```
 
-Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depuis `design/source_photo.png`). Notice : `python3 -I tools/make_manual.py`. Outil Linux de captures + tests audio : `-DSEMITONES_BUILD_RENDER=ON`, cible `SemitonesRender`.
+Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depuis `design/source_design.jpg`). Notice : `python3 -I tools/manual_images.py <dossier des captures>` puis `python3 -I tools/make_manual.py`. Outil Linux de captures + tests audio : `-DSEMITONES_BUILD_RENDER=ON`, cible `SemitonesRender`.
 
 ## Historique
 
+- **1.1.0** — nouveau design acier brossé ; la LED est remplacée par un anneau lumineux bleu autour du footswitch ; build macOS sur `macos-15`.
 - **1.0.0** — première version : visuel identique à la CHUG Capo + logo Studio Wiga noir, moteur faible latence, MIX, FAV, presets d'usine, MIDI learn, anti-gel v2.

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Semitones VERSION 1.0.0 LANGUAGES C CXX)
+project(Semitones VERSION 1.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,6 +30,7 @@ juce_add_plugin(Semitones
     PLUGIN_MANUFACTURER_CODE Stwg
     PLUGIN_CODE Smtn
     PRODUCT_NAME "Semitones"
+    BUNDLE_ID com.studiowiga.semitones
     VERSION ${PROJECT_VERSION}
     FORMATS VST3
     IS_SYNTH FALSE

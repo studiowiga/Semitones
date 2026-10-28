@@ -1,52 +1,46 @@
-"""Shared geometry for the Semitones (Chug Capo replica) artwork.
+"""Shared geometry for the Semitones artwork (design v2: brushed steel, ring light).
 
-All coordinates below are in pixels of the original reference photo
-(design/source_photo.png, 649 x 950). The build script maps them to the
-plugin canvas (760 x 958 logical, rendered at 2x).
+All coordinates are in pixels of the source design (design/source_design.jpg,
+941 x 1136). The build script maps them to the plugin canvas (760 x 958
+logical, rendered at 2x).
 """
-import numpy as np
 
 # ---------------------------------------------------------------- layout
 LOGICAL_W, LOGICAL_H = 760, 958        # default editor size (simple format)
 HIDPI = 2                               # art rendered at 2x
 TOP_BAR = 40                            # preset menu strip (logical px)
 BOTTOM_BAR = 38                         # status line strip (logical px)
+PEDAL_MAX_Y = 1113                      # ignore anything below (old status text)
 
-# pedal crop inside the photo (alpha bounding box is computed at build time)
 # --------------------------------------------------------------- controls
-LED_C = (322.8, 491.9)
-LED_LENS_R = 15.5          # lens radius
-LED_BEZEL_R = 21.0         # translucent bezel ring
-LED_RECESS_R = 27.5        # circular cut into the channel
+MIX_BTN = (350.0, 494.0, 30.0)
+FAV_BTN = (592.5, 494.0, 30.0)
+FOOT = (472.0, 931.0)
+FOOT_CAP_R = 54.0          # turned metal button
+FOOT_NUT_R = 94.0          # outer edge of the nut / inner ring
+FOOT_BEZEL_R = 119.0       # outer edge of the bezel
+RING_R = 97.0              # light ring radius (between nut and bezel)
+RING_W = 5.2               # light pipe width
 
-MIX_BTN = (224.0, 412.0, 25.5)
-FAV_BTN = (424.5, 412.0, 25.5)
-FOOT = (325.0, 772.5)
-FOOT_CAP_R = 37.0
-FOOT_CHROME_R = 69.0
-FOOT_RING_R = 100.0
+ARROW_L = [(201.0, 290.0), (269.0, 249.0), (269.0, 330.0)]
+ARROW_R = [(739.0, 290.0), (671.0, 249.0), (671.0, 330.0)]
+ARROW_L_BOX = (190, 238, 282, 342)
+ARROW_R_BOX = (658, 238, 750, 342)
 
-ARROW_L = [(103.0, 243.0), (160.0, 209.0), (160.0, 277.0)]   # approx triangle
-ARROW_R = [(545.0, 243.0), (488.0, 209.0), (488.0, 277.0)]
-ARROW_L_BOX = (96, 200, 168, 286)
-ARROW_R_BOX = (480, 200, 553, 286)
-
-GLASS = (184.0, 123.0, 466.0, 366.0)      # display glass (outer)
-GLASS_INNER = (189.0, 128.0, 461.0, 361.0)
-
-LOGO_C = (325.0, 897.5)
-LOGO_H = 21.0
+GLASS = (299.0, 142.0, 641.0, 435.0)       # display glass (outer)
+GLASS_INNER = (305.0, 148.0, 635.0, 429.0)
 
 # ------------------------------------------------------- 7-segment display
-SEG_T = 14.5
-SEG_GAP = 1.7
-SLANT = 0.055
-YT, YM, YB = 202.0, 242.5, 283.0
-UNITS_X = (373.5, 416.5)
-TENS_X = (UNITS_X[0] - 71.0, UNITS_X[1] - 71.0)
-SIGN_C = (250.5, 242.5)
-DOT_MIX = (217.5, 321.0, 4.6)
-DOT_FAV = (421.5, 321.0, 4.6)
+SEG_T = 15.5
+SEG_GAP = 1.8
+SLANT = 0.05
+YT, YM, YB = 249.5, 287.0, 324.5
+UNITS_X = (532.5, 585.5)
+TENS_X = (UNITS_X[0] - 84.0, UNITS_X[1] - 84.0)
+SIGN_C = (382.5, 287.0)
+SIGN_H, SIGN_V = 41.5, 38.0                # half extents of the +/- glyph
+DOT_MIX = (338.0, 397.0, 5.0)
+DOT_FAV = (602.0, 397.0, 5.0)
 
 
 def _hseg(x1, x2, y, t=SEG_T, g=SEG_GAP):
@@ -66,14 +60,9 @@ def _slant(poly, ym=YM, s=SLANT):
 
 
 def digit_segments(xl, xr):
-    """Return dict a..g -> polygon (photo coords)."""
     segs = {
-        'a': _hseg(xl, xr, YT),
-        'b': _vseg(xr, YT, YM),
-        'c': _vseg(xr, YM, YB),
-        'd': _hseg(xl, xr, YB),
-        'e': _vseg(xl, YM, YB),
-        'f': _vseg(xl, YT, YM),
+        'a': _hseg(xl, xr, YT), 'b': _vseg(xr, YT, YM), 'c': _vseg(xr, YM, YB),
+        'd': _hseg(xl, xr, YB), 'e': _vseg(xl, YM, YB), 'f': _vseg(xl, YT, YM),
         'g': _hseg(xl, xr, YM),
     }
     return {k: _slant(v) for k, v in segs.items()}
@@ -81,18 +70,16 @@ def digit_segments(xl, xr):
 
 def sign_segments():
     cx, cy = SIGN_C
-    t = SEG_T
     segs = {
-        'l': _hseg(cx - 36.0, cx + 1.0, cy, t, 1.6),
-        'r': _hseg(cx - 1.0, cx + 36.0, cy, t, 1.6),
-        'u': _vseg(cx, cy - 34.0, cy + 1.0, t, 1.6),
-        'd': _vseg(cx, cy - 1.0, cy + 34.0, t, 1.6),
+        'l': _hseg(cx - SIGN_H, cx + 1.0, cy, SEG_T, 1.6),
+        'r': _hseg(cx - 1.0, cx + SIGN_H, cy, SEG_T, 1.6),
+        'u': _vseg(cx, cy - SIGN_V, cy + 1.0, SEG_T, 1.6),
+        'd': _vseg(cx, cy - 1.0, cy + SIGN_V, SEG_T, 1.6),
     }
     return {k: _slant(v) for k, v in segs.items()}
 
 
 def all_layers():
-    """Ordered list of (name, polygon or circle) for every display element."""
     out = []
     for k, p in sign_segments().items():
         out.append(('s_' + k, p))

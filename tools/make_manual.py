@@ -197,9 +197,9 @@ def part(lang):
 
     s.append(PageBreak())
     s.append(P(T('3. The interface', "3. L'interface"), 'h1'))
-    s.append(img('overview.jpg', CW * 0.56))
-    s.append(P(T('The front panel is the CHUG Capo, control for control. Numbers refer to the next pages.',
-                 'La face avant est celle de la CHUG Capo, commande par commande. Les numéros renvoient aux pages suivantes.'), 'cap'))
+    s.append(img('overview.jpg', CW * 0.50))
+    s.append(P(T('Studio Wiga brushed steel design, same controls as the CHUG Capo. Numbers refer to the next pages.',
+                 'Design Studio Wiga en acier brossé, mêmes commandes que la CHUG Capo. Les numéros renvoient aux pages suivantes.'), 'cap'))
 
     rows = [[T('No.', 'N°'), T('Control', 'Commande'), T('Function', 'Fonction')]]
     rows += [
@@ -211,16 +211,18 @@ def part(lang):
              '-1 demi-ton (maintenir pour répéter). En réglage du mix : baisse le mix.')],
         ['3', T('Right arrow', 'Flèche droite'), T('+1 semitone (hold to repeat). In mix adjust mode: raises the mix.',
              '+1 demi-ton (maintenir pour répéter). En réglage du mix : monte le mix.')],
-        ['4', 'MIX', T('Click: MIX mode on / off. Hold (0.6 s): mix adjust mode, the LED and the MIX dot flash, the arrows set the '
+        ['4', 'MIX', T('Click: MIX mode on / off. Hold (0.6 s): mix adjust mode, the light ring and the MIX dot flash, the arrows set the '
              'mix 0 ... 100 %; click MIX again or wait 4 s to leave.',
-             'Clic : mode MIX marche / arrêt. Maintien (0,6 s) : réglage du mix, la LED et le point MIX clignotent, les flèches '
+             'Clic : mode MIX marche / arrêt. Maintien (0,6 s) : réglage du mix, l\'anneau lumineux et le point MIX clignotent, les flèches '
              'règlent le mix de 0 à 100 % ; recliquez sur MIX ou attendez 4 s pour sortir.')],
         ['5', 'FAV', T('Click: recall / leave the FAV setting. Hold (0.9 s): saves the current sound (pitch, MIX mode, mix) as FAV '
              '(the display blinks) and engages it.',
              'Clic : rappelle / quitte le réglage FAV. Maintien (0,9 s) : mémorise le son actuel (transposition, mode MIX, mix) '
              'comme FAV (l\'afficheur clignote) et l\'active.')],
-        ['6', 'LED', T('Off = bypass. Red = effect on, 100 % shifted. Blue = MIX mode. Green = FAV. Flashing blue = mix adjust.',
-             'Éteinte = bypass. Rouge = effet actif, 100 % transposé. Bleue = mode MIX. Verte = FAV. Bleue clignotante = réglage du mix.')],
+        ['6', T('Light ring', 'Anneau lumineux'), T('Blue ring around the footswitch, the colour of the display: lit = effect on, off = bypass, '
+             'flashing = mix adjust. MIX and FAV are shown by the dots of the display.',
+             'Anneau bleu autour du footswitch, de la couleur de l\'afficheur : allumé = effet actif, éteint = bypass, clignotant = réglage '
+             'du mix. MIX et FAV sont signalés par les points de l\'afficheur.')],
         ['7', T('Footswitch', 'Footswitch'), T('Effect on / bypass (buffered bypass, click-free). Toggles as soon as it is pressed.',
              'Effet actif / bypass (bypass bufférisé, sans clic). Bascule dès l\'appui.')],
         ['8', T('Preset menu', 'Menu des presets'), T('Factory presets (section 6). Shows "Custom" when the sound matches none of them.',
@@ -233,7 +235,7 @@ def part(lang):
     s.append(table(rows, [14 * mm, 30 * mm, CW - 44 * mm]))
 
     s.append(PageBreak())
-    s.append(P(T('4. Modes, footswitch and LED', '4. Modes, footswitch et LED'), 'h1'))
+    s.append(P(T('4. Modes, footswitch and light ring', '4. Modes, footswitch et anneau lumineux'), 'h1'))
     s.append(P(T('Pitch (100 %)', 'Transposition (100 %)'), 'h2'))
     s.append(P(T("With MIX mode off you only hear the transposed guitar, like a capo or a retuned instrument. At 0 the signal goes "
                  "straight through (no delay at all).",
@@ -247,11 +249,11 @@ def part(lang):
                  "à -3 dB). Les réglages bas ajoutent une octave ou une quinte sous ou sur le riff ; 100 % = le signal transposé seul. "
                  "La partie directe n'est jamais retardée : le mélange reste serré.")))
     s.append(P(T('FAV', 'FAV'), 'h2'))
-    s.append(P(T("One favourite memory, as on the pedal. Engaging FAV switches to the stored pitch, MIX mode and mix (green LED, FAV dot). "
+    s.append(P(T("One favourite memory, as on the pedal. Engaging FAV switches to the stored pitch, MIX mode and mix (FAV dot lit). "
                  "Clicking FAV again returns to your previous setting. Moving an arrow while FAV is on starts from the FAV sound and "
                  "leaves FAV. The FAV memory is saved with the project.",
                  "Une mémoire favorite, comme sur la pédale. Activer FAV passe à la transposition, au mode MIX et au mix mémorisés "
-                 "(LED verte, point FAV). Recliquer sur FAV revient au réglage précédent. Toucher une flèche en FAV repart du son FAV et "
+                 "(point FAV allumé). Recliquer sur FAV revient au réglage précédent. Toucher une flèche en FAV repart du son FAV et "
                  "quitte FAV. La mémoire FAV est enregistrée avec le projet.")))
 
     s.append(P(T('5. MIDI and expression pedals', '5. MIDI et pédales d\'expression'), 'h1'))

@@ -142,8 +142,7 @@ SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     setSize ((int) Layout::W, (int) Layout::H);
 
     const auto e = proc.getEffective();
-    const int col = e.fav ? 2 : (e.mixOn ? 1 : 0);
-    if (e.on) led[col] = 1.0f;
+    if (e.on) led[0] = 1.0f;
     segMask = computeSegments();
     startTimerHz (30);
 }
@@ -188,7 +187,6 @@ SemitonesEditor::Hit SemitonesEditor::hitTest (juce::Point<float> p) const
     if (inRect (Layout::hitLeft)) return Hit::left;
     if (inRect (Layout::hitRight)) return Hit::right;
     if (inRect (Layout::hitDisplay)) return Hit::display;
-    if (inCircle (Layout::ledX, Layout::ledY, Layout::ledR + 6)) return Hit::led;
     return Hit::background;
 }
 
@@ -253,14 +251,12 @@ void SemitonesEditor::paint (juce::Graphics& g)
     else if (bgImage.isValid())
         g.drawImage (bgImage, bounds, juce::RectanglePlacement::stretchToFit);
 
-    // LED: light on the faceplate first, then the lens (fade in / out)
-    static const char* cols[3] = { "red", "blue", "green" };
-    for (int c = 0; c < 3; ++c)
-        if (led[c] > 0.003f)
-        {
-            drawSprite (g, std::string ("ledlight_") + cols[c], led[c]);
-            drawSprite (g, std::string ("led_") + cols[c], led[c]);
-        }
+    // footswitch light ring: light on the faceplate first, then the light pipe
+    if (led[0] > 0.003f)
+    {
+        drawSprite (g, "ringlight", led[0]);
+        drawSprite (g, "ring_lit", led[0]);
+    }
 
     // pressed controls
     if (downLeft)  drawSprite (g, "press_left");
@@ -313,9 +309,8 @@ juce::String SemitonesEditor::hintFor (Hit h) const
         case Hit::right:   return mixAdjust ? "Raise the mix" : "Raise the pitch one semitone (hold to repeat)";
         case Hit::mix:     return "MIX: click = mix mode on/off   -   hold = adjust the mix with the arrows";
         case Hit::fav:     return "FAV: click = recall / leave FAV   -   hold = save the current sound as FAV";
-        case Hit::foot:    return "Footswitch: effect on / bypass   -   right click: MIDI";
+        case Hit::foot:    return "Footswitch: effect on / bypass (blue ring = on)   -   right click: MIDI";
         case Hit::display: return "Drag or scroll to change the pitch   -   right click: MIDI";
-        case Hit::led:     return "Red: pitch 100 %   -   Blue: MIX mode   -   Green: FAV";
         default: break;
     }
     return {};
@@ -450,24 +445,21 @@ void SemitonesEditor::timerCallback()
     if (mixAdjust && ! downMix && ! downLeft && ! downRight && t - mixAdjustLast > 4000.0)
         mixAdjust = false;
 
-    // LED (Echoflex fades: 0.45 on / 0.28 off per frame)
+    // footswitch ring = effect on (Echoflex fades: 0.45 on / 0.28 off per frame),
+    // flashing while the mix is being adjusted
     const auto e = proc.getEffective();
-    int col = e.fav ? 2 : (e.mixOn ? 1 : 0);
     bool lit = e.on;
-    if (mixAdjust) { col = 1; lit = e.on ? std::fmod (blinkPhase, 1.0) < 0.5 : false; }
-    for (int c = 0; c < 3; ++c)
+    if (mixAdjust) lit = e.on && std::fmod (blinkPhase, 1.0) < 0.5;
     {
-        const float target = (lit && c == col) ? 1.0f : 0.0f;
-        led[c] += (target - led[c]) * (target > led[c] ? 0.45f : 0.28f);
-        if (std::abs (led[c] - target) < 0.004f) led[c] = target;
+        const float target = lit ? 1.0f : 0.0f;
+        led[0] += (target - led[0]) * (target > led[0] ? 0.45f : 0.28f);
+        if (std::abs (led[0] - target) < 0.004f) led[0] = target;
     }
-
-    // what changed?
-    bool ledChanged = false;
-    for (int c = 0; c < 3; ++c)
-        if (std::abs (led[c] - drawnLed[c]) > 0.002f) { ledChanged = true; drawnLed[c] = led[c]; }
-    if (ledChanged)
-        if (auto* sp = sprite ("ledlight_red")) askRepaint (toScreen (sp->r, 4.0f));
+    if (std::abs (led[0] - drawnLed[0]) > 0.002f)
+    {
+        drawnLed[0] = led[0];
+        if (auto* sp = sprite ("ringlight")) askRepaint (toScreen (sp->r, 4.0f));
+    }
 
     segMask = computeSegments();
     if (segMask != drawnSegMask)
@@ -575,7 +567,7 @@ void SemitonesEditor::mouseMove (const juce::MouseEvent& ev)
         hover = h;
         hoverSince = nowMs();
     }
-    setMouseCursor (h == Hit::background || h == Hit::led || h == Hit::none ? juce::MouseCursor::NormalCursor
+    setMouseCursor (h == Hit::background || h == Hit::none ? juce::MouseCursor::NormalCursor
                                                                              : juce::MouseCursor::PointingHandCursor);
 }
 

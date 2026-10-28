@@ -47,8 +47,8 @@ def main():
     rest = sys.argv[4:]
     bg = Image.open(os.path.join(A, 'background.jpg')).convert('RGBA')
     if led != 'off':
-        paste(bg, 'ledlight_' + led)
-        paste(bg, 'led_' + led)
+        paste(bg, 'ringlight')
+        paste(bg, 'ring_lit')
     for s in segs_for(val):
         paste(bg, 'seg_' + s)
     if 'mix' in rest:
