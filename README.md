@@ -49,3 +49,5 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 
 - v1.4.8 : menu de taille de fenêtre : « 60 % (default) », 75 %, 100 % (plus de taille en pixels)
 - v1.5.0 : MIDI Learn au clic droit sur chaque commande (Clear MIDI, assignations sauvegardées avec le projet)
+
+- v1.5.1 : menu de taille aligné sur les autres pédales : 60 % (default), 75 %, 100 %

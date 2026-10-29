@@ -751,13 +751,16 @@ void SemitonesEditor::showMenu (Hit h)
         m.addSubMenu ("MIDI", midi);
     }
     m.addSectionHeader ("Window size");
-    for (float sz : { 1.0f, 1.25f, 1.5f, 2.0f })
+    // même menu que les autres pédales : 60 % (taille par défaut), 75 %, 100 %
+    const float szs[] = { 1.0f, 1.25f, 1.6667f };
+    const char* const szLabels[] = { "60 % (default)", "75 %", "100 %" };
+    for (int k = 0; k < 3; ++k)
     {
+        const float sz = szs[k];
         acts[id] = { 6, MidiTarget::count, sz };
         const int w = juce::roundToInt (Layout::defaultW * sz);
         const bool cur = std::abs (getWidth() - w) < 2;
-        m.addItem (id++, sz == 1.0f ? juce::String ("60 % (default)")
-                                    : juce::String ((int) (sz * 100)) + " %", true, cur);
+        m.addItem (id++, szLabels[k], true, cur);
     }
 
     juce::Component::SafePointer<SemitonesEditor> safe (this);
