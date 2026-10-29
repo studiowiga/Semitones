@@ -46,3 +46,5 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 - **1.2.0** — fenêtre et pédale réduites à la taille des pédales simples Studio Wiga (380 x 479 par défaut et minimum) ; anneau bleu avec lumière tournante à longue traînée.
 - **1.1.0** — nouveau design acier brossé ; la LED est remplacée par un anneau lumineux bleu autour du footswitch ; build macOS sur `macos-15`.
 - **1.0.0** — première version : visuel identique à la CHUG Capo + logo Studio Wiga noir, moteur faible latence, MIX, FAV, presets d'usine, MIDI learn, anti-gel v2.
+
+- v1.4.8 : menu de taille de fenêtre : « 60 % (default) », 75 %, 100 % (plus de taille en pixels)

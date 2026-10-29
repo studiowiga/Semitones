@@ -725,7 +725,7 @@ void SemitonesEditor::showMenu (Hit h)
         acts[id] = { 6, MidiTarget::count, sz };
         const int w = juce::roundToInt (Layout::defaultW * sz);
         const bool cur = std::abs (getWidth() - w) < 2;
-        m.addItem (id++, sz == 1.0f ? "Default (" + juce::String (w) + " x " + juce::String (Layout::defaultH) + ")"
+        m.addItem (id++, sz == 1.0f ? juce::String ("60 % (default)")
                                     : juce::String ((int) (sz * 100)) + " %", true, cur);
     }
 
