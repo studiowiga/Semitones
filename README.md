@@ -36,6 +36,7 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 
 ## Historique
 
+- **1.4.7** — le menu des presets s'ouvre toujours au même endroit, juste sous la case, quel que soit le preset choisi (il ne sort plus de l'écran avec les presets du bas de la liste).
 - **1.4.6** — menu des presets fiable à la souris : le preset choisi est appliqué immédiatement à la fermeture du menu (la notification différée de JUCE pouvait être écrasée par le rafraîchissement de l'affichage) ; la case n'est plus resynchronisée tant que le menu est ouvert.
 - **1.4.5** — retour au visuel de la 1.4.1 (éclairage d'origine, vis d'origine) ; seul changement : un point bleu rond au-dessus de MIX dans l'afficheur à la place du trait. Les essais 1.4.2 à 1.4.4 sont abandonnés.
 - **1.4.1** — trait bleu au-dessus de MIX dans l'afficheur quand le mode MIX est actif (clignote pendant le réglage du mix) ; ligne d'état agrandie.

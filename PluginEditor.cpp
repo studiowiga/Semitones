@@ -120,11 +120,14 @@ void PresetBox::showPopup()
     }
     auto& lf = getLookAndFeel();
     menu.setLookAndFeel (&lf);
-    juce::Label* label = nullptr;
-    for (auto* c : getChildren())
-        if (auto* l = dynamic_cast<juce::Label*> (c)) label = l;
-    auto options = label != nullptr ? lf.getOptionsForComboBoxPopupMenu (*this, *label)
-                                    : juce::PopupMenu::Options().withTargetComponent (this).withMinimumWidth (getWidth());
+    // always open at the same place, right under the box, whatever the current
+    // preset (the stock combo box shifts the menu so the selected item sits on
+    // the box, which pushes it off screen for presets at the bottom of the list)
+    auto options = juce::PopupMenu::Options().withTargetComponent (this)
+                                             .withMinimumWidth (getWidth())
+                                             .withMaximumNumColumns (1)
+                                             .withPreferredPopupDirection (juce::PopupMenu::Options::PopupDirection::downwards)
+                                             .withStandardItemHeight (juce::jlimit (22, 30, juce::roundToInt ((float) getHeight() * 0.75f)));
     juce::Component::SafePointer<PresetBox> safe (this);
     menu.showMenuAsync (options, [safe] (int result)
     {
