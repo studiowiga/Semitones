@@ -106,6 +106,44 @@ void SemitonesLook::drawPopupMenuSectionHeader (juce::Graphics& g, const juce::R
 }
 
 // ============================================================================
+void PresetBox::showPopup()
+{
+    if (! isEnabled())
+        return;
+    auto menu = *getRootMenu();
+    const int sel = getSelectedId();
+    for (juce::PopupMenu::MenuItemIterator it (menu, true); it.next();)
+    {
+        auto& item = it.getItem();
+        if (item.itemID != 0)
+            item.isTicked = (item.itemID == sel);
+    }
+    auto& lf = getLookAndFeel();
+    menu.setLookAndFeel (&lf);
+    juce::Label* label = nullptr;
+    for (auto* c : getChildren())
+        if (auto* l = dynamic_cast<juce::Label*> (c)) label = l;
+    auto options = label != nullptr ? lf.getOptionsForComboBoxPopupMenu (*this, *label)
+                                    : juce::PopupMenu::Options().withTargetComponent (this).withMinimumWidth (getWidth());
+    juce::Component::SafePointer<PresetBox> safe (this);
+    menu.showMenuAsync (options, [safe] (int result)
+    {
+        if (safe == nullptr)
+            return;
+        safe->hidePopup();
+        if (result > 0)
+            safe->pick (result);
+    });
+}
+
+void PresetBox::pick (int itemId)
+{
+    setSelectedId (itemId, juce::dontSendNotification);
+    if (onPick != nullptr)
+        onPick (itemId);
+}
+
+// ============================================================================
 SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     : AudioProcessorEditor (p), proc (p)
 {
@@ -155,10 +193,12 @@ SemitonesEditor::SemitonesEditor (SemitonesProcessor& p)
     presetBox.setMouseClickGrabsKeyboardFocus (false);
     presetBox.setScrollWheelEnabled (false);
     presetBox.setTooltip ("Factory presets");
-    presetBox.onChange = [this]
+    presetBox.onPick = [this] (int id)
     {
-        const int id = presetBox.getSelectedId();
-        if (id > 0) proc.applyPreset (id - 1);
+        lastPresetPickMs = nowMs();
+        proc.applyPreset (id - 1);         // immediate: parameters are set right now
+        syncPresetBox();
+        timerCallback();                   // display / status / ring follow at once
     };
     addAndMakeVisible (presetBox);
     syncPresetBox();
@@ -419,6 +459,8 @@ void SemitonesEditor::askRepaint (juce::Rectangle<int> r)
 
 void SemitonesEditor::syncPresetBox()
 {
+    if (presetBox.isPopupActive())
+        return;                            // never touch the box while its menu is open
     const auto e = proc.getEffective();
     const auto& list = SemitonesProcessor::factoryPresets();
     int id = 0;

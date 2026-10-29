@@ -101,10 +101,29 @@ int main (int argc, char** argv)
         for (int i = (int) list.size() - 1; i >= 0; --i)
         {
             setP (proc, ParamID::fav, 1.0f);                         // even from FAV
-            box->setSelectedId (i + 1, juce::sendNotificationSync);
+            dynamic_cast<PresetBox*> (box)->pick (i + 1);
             okBox += matches (list[(size_t) i]) ? 1 : 0;
             e->settleForSnapshot();                                  // display sync keeps the choice
             if (box->getSelectedId() != i + 1) printf ("preset %d: box shows %d\n", i + 1, box->getSelectedId());
+        }
+        // real mouse path: the popup result is delivered asynchronously by JUCE,
+        // while the editor timer keeps running
+        {
+            int okAsync = 0;
+            for (int i = 0; i < (int) list.size(); ++i)
+            {
+                const int start = (i + 7) % (int) list.size();
+                proc.applyPreset (start);
+                e->settleForSnapshot();
+                // what the menu does when it closes on item i (callback of showPopup)
+                e->settleForSnapshot();
+                dynamic_cast<PresetBox*> (box)->pick (i + 1);
+                e->settleForSnapshot();                                     // editor timer ticks
+                juce::MessageManager::getInstance()->runDispatchLoopUntil (30);
+                if (box->getSelectedId() != i + 1) printf ("  box shows %d instead of %d\n", box->getSelectedId(), i + 1);
+                okAsync += matches (list[(size_t) i]) ? 1 : 0;
+            }
+            printf ("presets (mouse path): %d/%d\n", okAsync, (int) list.size());
         }
         int headings = 0;
         auto* menu = box->getRootMenu();

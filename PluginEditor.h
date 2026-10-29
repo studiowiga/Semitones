@@ -25,6 +25,17 @@ private:
     juce::Typeface::Ptr face;
 };
 
+/** Preset menu: the chosen preset is applied immediately (synchronously) when
+    the menu closes. The stock ComboBox reports the choice later through an
+    async notification, which could be overwritten by the display refresh. */
+class PresetBox : public juce::ComboBox
+{
+public:
+    std::function<void (int)> onPick;
+    void showPopup() override;
+    void pick (int itemId);
+};
+
 class SemitonesEditor : public juce::AudioProcessorEditor,
                         private juce::Timer
 {
@@ -74,7 +85,8 @@ private:
     SemitonesProcessor& proc;
     SemitonesLook look;
     juce::Typeface::Ptr face;
-    juce::ComboBox presetBox;
+    PresetBox presetBox;
+    double lastPresetPickMs = 0;
 
     juce::Image bgImage, bgCache;
     float cacheScale = 0.0f;
