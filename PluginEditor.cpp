@@ -372,7 +372,9 @@ juce::String SemitonesEditor::statusText() const
 {
     const int lt = proc.learnTarget.load();
     if (lt >= 0)
-        return "MIDI LEARN  -  move a controller for: " + SemitonesProcessor::targetName ((MidiTarget) lt);
+        return "MIDI LEARN: move a control for " + SemitonesProcessor::targetName ((MidiTarget) lt);
+    if (learnLineUntil > 0 && nowMs() < learnLineUntil)
+        return learnLine;
     if (hover != Hit::none && hover != Hit::background && nowMs() - hoverSince < 2500.0)
         return hintFor (hover);
     const auto e = proc.getEffective();
@@ -566,6 +568,12 @@ void SemitonesEditor::timerCallback()
             if (changed & (1 << b))
                 if (auto* sp = sprite (names[b])) askRepaint (toScreen (sp->r, 3.0f));
     }
+    const int learned = proc.lastLearned.exchange (-1);
+    if (learned >= 0 && learned < (int) MidiTarget::count)
+    {
+        learnLine = SemitonesProcessor::targetName ((MidiTarget) learned) + " = CC " + juce::String (proc.midiCC[(size_t) learned].load());
+        learnLineUntil = t + 2000.0;
+    }
     const auto status = statusText();
     if (status != drawnStatus)
     {
@@ -690,12 +698,18 @@ void SemitonesEditor::showMenu (Hit h)
     int id = 1;
     struct Act { int kind; MidiTarget t; float size; };
     std::map<int, Act> acts;
+    auto ccText = [this] (MidiTarget t)
+    {
+        const int cc = proc.midiCC[(size_t) t].load();
+        return cc >= 0 ? "CC " + juce::String (cc) : juce::String ("none");
+    };
     for (auto t : targets)
     {
-        m.addSectionHeader ("MIDI  -  " + SemitonesProcessor::targetName (t));
+        const auto name = SemitonesProcessor::targetName (t);
+        m.addSectionHeader ("MIDI  -  " + name);
         const int cc = proc.midiCC[(size_t) t].load();
         acts[id] = { 0, t, 0 };
-        m.addItem (id++, cc >= 0 ? "MIDI Learn (now CC " + juce::String (cc) + ")" : "MIDI Learn", true,
+        m.addItem (id++, "MIDI Learn: " + name + " (" + ccText (t) + ")", true,
                    proc.learnTarget.load() == (int) t);
         if (SemitonesProcessor::isToggle (t))
         {
@@ -711,13 +725,30 @@ void SemitonesEditor::showMenu (Hit h)
             m.addItem (id++, "Reset expression pedal travel", cc >= 0);
         }
         acts[id] = { 3, t, 0 };
-        m.addItem (id++, "Clear", cc >= 0);
+        m.addItem (id++, "Clear MIDI: " + name, cc >= 0);
     }
     if (proc.learnTarget.load() >= 0)
     {
         m.addSeparator();
         acts[id] = { 5, MidiTarget::count, 0 };
-        m.addItem (id++, "Cancel MIDI Learn");
+        m.addItem (id++, "Cancel MIDI learn");
+    }
+    // right click outside the controls: MIDI sub-menu with every control
+    if (targets.empty())
+    {
+        juce::PopupMenu midi;
+        midi.setLookAndFeel (&look);
+        for (int i = 0; i < (int) MidiTarget::count; ++i)
+        {
+            const auto t = (MidiTarget) i;
+            acts[id] = { 0, t, 0 };
+            midi.addItem (id++, "Learn: " + SemitonesProcessor::targetName (t) + " (" + ccText (t) + ")", true,
+                          proc.learnTarget.load() == i);
+        }
+        midi.addSeparator();
+        acts[id] = { 7, MidiTarget::count, 0 };
+        midi.addItem (id++, "Reset MIDI to defaults (nothing assigned)");
+        m.addSubMenu ("MIDI", midi);
     }
     m.addSectionHeader ("Window size");
     for (float sz : { 1.0f, 1.25f, 1.5f, 2.0f })
@@ -741,12 +772,13 @@ void SemitonesEditor::showMenu (Hit h)
             const size_t ti = (size_t) a.t;
             switch (a.kind)
             {
-                case 0: pr.learnTarget.store ((int) a.t); break;
+                case 0: pr.learnTarget.store (pr.learnTarget.load() == (int) a.t ? -1 : (int) a.t); break;   // clicking again cancels
                 case 1: pr.momentary[ti].store (false); break;
                 case 2: pr.momentary[ti].store (true); break;
                 case 3: pr.clearMidi (a.t); break;
                 case 4: pr.courseMin[ti].store (1.0f); pr.courseMax[ti].store (0.0f); break;
                 case 5: pr.learnTarget.store (-1); break;
+                case 7: pr.resetMidiMap(); break;
                 case 6: safe->setSize (juce::roundToInt (Layout::defaultW * a.size), juce::roundToInt (Layout::defaultH * a.size)); break;
                 default: break;
             }

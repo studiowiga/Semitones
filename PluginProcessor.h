@@ -91,10 +91,12 @@ public:
 
     // --------------------------------------------------------------- MIDI map
     std::atomic<int> learnTarget { -1 };
+    std::atomic<int> lastLearned { -1 };       // last learned target (read and reset to -1 by the editor)
     std::array<std::atomic<int>, (size_t) MidiTarget::count> midiCC;
     std::array<std::atomic<bool>, (size_t) MidiTarget::count> momentary; // toggles: true = momentary
     std::array<std::atomic<float>, (size_t) MidiTarget::count> courseMin, courseMax;
     void clearMidi (MidiTarget t);
+    void resetMidiMap();                       // defaults: nothing assigned, FAV = momentary switch
     static juce::String targetName (MidiTarget t);
     static bool isToggle (MidiTarget t) { return t == MidiTarget::footswitch || t == MidiTarget::fav || t == MidiTarget::mixOn; }
     static bool isContinuous (MidiTarget t) { return t == MidiTarget::semitones || t == MidiTarget::mix; }

@@ -16,7 +16,7 @@ Réplique VST3 de la pédale **Solar Guitars CHUG Capo** : transposition de -12 
 | FAV | rappel / sortie de la mémoire FAV | 0,9 s : mémorise le son actuel comme FAV |
 | Footswitch | effet / bypass (bascule à l'appui) | — |
 
-Anneau bleu autour du footswitch (couleur de l'afficheur) avec une lumière à longue traînée floue et halo qui tourne (un tour en 1,6 s) : allumé = effet actif, éteint = bypass, clignotant = réglage du mix. Point bleu au-dessus de MIX dans l'afficheur quand le mode MIX est actif ; états MIX et FAV sur la ligne d'état. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Clic droit sur le fond : taille de fenêtre (défaut 391 x 493 = minimum ; 125 %, 150 %, 200 %).
+Anneau bleu autour du footswitch (couleur de l'afficheur) avec une lumière à longue traînée floue et halo qui tourne (un tour en 1,6 s) : allumé = effet actif, éteint = bypass, clignotant = réglage du mix. Point bleu au-dessus de MIX dans l'afficheur quand le mode MIX est actif ; états MIX et FAV sur la ligne d'état. Clic droit sur une commande : MIDI learn (switchs à accrochage ou momentanés, pédales d'expression lissées, CC 14 bits, course apprise). Pendant l'attente la ligne d'état affiche « MIDI LEARN: move a control for … », puis 2 s « <commande> = CC n » ; « Clear MIDI » retire l'assignation. Clic droit sur le fond : sous-menu MIDI (Learn de toutes les commandes, Reset MIDI to defaults) et taille de fenêtre (défaut 391 x 493 = minimum ; 125 %, 150 %, 200 %).
 
 ## Moteur audio
 
@@ -48,3 +48,4 @@ Visuel : `python3 -I tools/build_art.py` (génère `assets/` et `Layout.h` depui
 - **1.0.0** — première version : visuel identique à la CHUG Capo + logo Studio Wiga noir, moteur faible latence, MIX, FAV, presets d'usine, MIDI learn, anti-gel v2.
 
 - v1.4.8 : menu de taille de fenêtre : « 60 % (default) », 75 %, 100 % (plus de taille en pixels)
+- v1.5.0 : MIDI Learn au clic droit sur chaque commande (Clear MIDI, assignations sauvegardées avec le projet)

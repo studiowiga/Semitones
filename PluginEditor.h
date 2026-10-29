@@ -110,6 +110,9 @@ private:
     float ringAngle = 0.0f;                  // rotating light (radians)
     int drawnPressed = -1;
     juce::String drawnStatus;
+    // MIDI Learn: "<control> = CC n" shown for 2 s in the status line once learned
+    juce::String learnLine;
+    double learnLineUntil = 0;
     double blinkPhase = 0;
 
     // anti-freeze v2

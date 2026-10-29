@@ -275,11 +275,12 @@ void SemitonesProcessor::handleMidi (const juce::MidiMessage& m, int samplePos)
     midiActivity.fetch_add (1, std::memory_order_relaxed);
 
     const int lt = learnTarget.load (std::memory_order_acquire);
-    if (lt >= 0 && lt < (int) MidiTarget::count && ! (cc >= 32 && cc < 64))
+    if (lt >= 0 && lt < (int) MidiTarget::count && ! (cc >= 32 && cc < 64) && cc < 120)
     {
         midiCC[(size_t) lt].store (cc);
         courseMin[(size_t) lt].store (1.0f);
         courseMax[(size_t) lt].store (0.0f);
+        lastLearned.store (lt);
         learnTarget.store (-1);
         lastCCValue[(size_t) cc] = v;
         if (cc < 32) ccMsb[(size_t) cc] = v;
@@ -425,6 +426,16 @@ void SemitonesProcessor::clearMidi (MidiTarget t)
     midiCC[(size_t) t].store (-1);
     courseMin[(size_t) t].store (1.0f);
     courseMax[(size_t) t].store (0.0f);
+}
+
+void SemitonesProcessor::resetMidiMap()
+{
+    learnTarget.store (-1);
+    for (int i = 0; i < (int) MidiTarget::count; ++i)
+    {
+        clearMidi ((MidiTarget) i);
+        momentary[(size_t) i].store (i == (int) MidiTarget::fav);
+    }
 }
 
 juce::String SemitonesProcessor::targetName (MidiTarget t)
