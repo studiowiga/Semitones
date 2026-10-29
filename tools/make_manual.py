@@ -20,6 +20,7 @@ OUT = os.path.join(ROOT, 'docs', 'Semitones_Manual_EN-FR_v%s.pdf' % VERSION)
 pdfmetrics.registerFont(TTFont('Pop', os.path.join(ROOT, 'assets', 'Poppins-Medium.ttf')))
 pdfmetrics.registerFont(TTFont('PopB', os.path.join(ROOT, 'assets', 'Poppins-Bold.ttf')))
 pdfmetrics.registerFont(TTFont('PopL', '/usr/share/fonts/truetype/google-fonts/Poppins-Light.ttf'))
+pdfmetrics.registerFont(TTFont('Sym', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
 pdfmetrics.registerFontFamily('PopL', normal='PopL', bold='PopB', italic='PopL', boldItalic='PopB')
 
 ACC = colors.HexColor('#39a0ff')
@@ -55,6 +56,37 @@ def logo_png(path):
     return al.size
 
 LOGO = os.path.join(M, 'logo_white.png')
+
+# ------------------------------------------------------------ detoured cover (house style: pedal on black, reflection, soft halo)
+def cover_detoured(out, accent=(57, 160, 255)):
+    im = Image.open(os.path.join(ROOT, 'docs', 'screenshot.png')).convert('RGB')   # real render, effect on, +4
+    m = Image.new('L', im.size, 0); dr = ImageDraw.Draw(m)
+    dr.rounded_rectangle([117, 12, 663, 945], radius=12, fill=255)                 # pedal body
+    dr.rectangle([89, 422, 118, 504], fill=255); dr.rectangle([662, 422, 699, 504], fill=255)   # jacks
+    im.putalpha(m)
+    p = im.crop((86, 10, 702, 947))
+    up = 2
+    p = p.resize((p.width * up, p.height * up), Image.LANCZOS)
+    pw, ph = p.size
+    cw, ch = int(pw * 1.55), int(ph * 1.42)
+    x0, y0 = (cw - pw) // 2, int(ph * 0.10)
+    a = np.asarray(p.split()[3]).astype(np.float32) / 255
+    canvas = np.zeros((ch, cw, 3), np.float32)
+    A = np.zeros((ch, cw), np.float32); A[y0:y0 + ph, x0:x0 + pw] = a
+    g = cv2.GaussianBlur(A, (0, 0), pw * 0.16)
+    yy, xx = np.mgrid[0:ch, 0:cw].astype(np.float32)
+    win = np.clip(np.minimum.reduce([xx, cw - 1 - xx, yy, ch - 1 - yy]) / (0.12 * cw), 0, 1) ** 2
+    g = g / max(g.max(), 1e-6) * win * 0.26
+    canvas += g[..., None] * (np.array(accent, np.float32)[None, None, :] / 255)
+    rgb = np.asarray(p.convert('RGB')).astype(np.float32) / 255
+    rh = int(ph * 0.30); ry = y0 + ph + 2; rh = min(rh, ch - ry)
+    ra = a[::-1][:rh] * np.linspace(0.30, 0.0, rh)[:, None]
+    canvas[ry:ry + rh, x0:x0 + pw] = canvas[ry:ry + rh, x0:x0 + pw] * (1 - ra[..., None]) + rgb[::-1][:rh] * ra[..., None]
+    canvas[y0:y0 + ph, x0:x0 + pw] = canvas[y0:y0 + ph, x0:x0 + pw] * (1 - a[..., None]) + rgb * a[..., None]
+    Image.fromarray((np.clip(canvas, 0, 1) * 255).astype(np.uint8)).save(out, quality=92)
+
+COVER = os.path.join(M, 'cover_detoured.jpg')
+cover_detoured(COVER)
 lw, lh = logo_png(LOGO)
 
 # ------------------------------------------------------------ styles
@@ -93,9 +125,9 @@ def cover_page(c, doc, lang):
     c.setFillColor(ACC); c.rect(0, H - 4 * mm, W, 4 * mm, fill=1, stroke=0)
     c.setFont('PopB', 9); c.setFillColor(ACC)
     c.drawString(18 * mm, H - 14 * mm, 'ENGLISH' if lang == 'en' else 'FRANÇAIS')
-    pim = Image.open(os.path.join(M, 'cover_pedal.jpg'))
+    pim = Image.open(COVER)
     ph = 172 * mm; pw = ph * pim.width / pim.height
-    c.drawImage(os.path.join(M, 'cover_pedal.jpg'), (W - pw) / 2, H - 22 * mm - ph, pw, ph)
+    c.drawImage(COVER, (W - pw) / 2, H - 20 * mm - ph, pw, ph)
     title = 'S E M I T O N E S'
     c.setFillColor(colors.white); c.setFont('PopB', 30)
     c.drawCentredString(W / 2, 62 * mm, title)
@@ -225,8 +257,8 @@ def part(lang):
              'du mix. MIX : point bleu dans l\'afficheur ; états MIX et FAV aussi sur la ligne d\'état.')],
         ['7', T('Footswitch', 'Footswitch'), T('Effect on / bypass (buffered bypass, click-free). Toggles as soon as it is pressed.',
              'Effet actif / bypass (bypass bufférisé, sans clic). Bascule dès l\'appui.')],
-        ['8', T('Preset menu', 'Menu des presets'), T('On the pedal, above the display: factory presets (section 6) grouped by use. Shows "Custom" when the sound matches none of them.',
-             'Sur la pédale, au-dessus de l\'afficheur : presets d\'usine (section 6) groupés par usage. Affiche « Custom » quand le son ne correspond à aucun.')],
+        ['8', T('Preset menu', 'Menu des presets'), T('On the pedal, above the display: factory presets (section 8) grouped by use. Shows "Custom" when the sound matches none of them.',
+             'Sur la pédale, au-dessus de l\'afficheur : presets d\'usine (section 8) groupés par usage. Affiche « Custom » quand le son ne correspond à aucun.')],
         ['9', T('Status line', "Ligne d'état"), T('Live values (pitch, mix %, MIX and FAV state, bypass), control hints on mouse-over, '
              'MIDI learn prompts.', 'Valeurs en direct (transposition, mix en %, état MIX et FAV, bypass), aide au survol, invite de MIDI learn.')],
         ['10 / 11', 'IN / OUT', T('Input on the right side, output on the left, as on the pedal.',
@@ -235,66 +267,109 @@ def part(lang):
     s.append(table(rows, [14 * mm, 30 * mm, CW - 44 * mm]))
 
     s.append(PageBreak())
-    s.append(P(T('4. Modes, footswitch and light ring', '4. Modes, footswitch et anneau lumineux'), 'h1'))
-    s.append(P(T('Pitch (100 %)', 'Transposition (100 %)'), 'h2'))
-    s.append(P(T("With MIX mode off you only hear the transposed guitar, like a capo or a retuned instrument. At 0 the signal goes "
+    s.append(P(T('4. Controls: pitch, MIX and FAV', '4. Les commandes : transposition, MIX et FAV'), 'h1'))
+    s.append(P(T('Pitch (arrows and display)', 'Transposition (flèches et afficheur)'), 'h2'))
+    s.append(P(T("The arrows change the pitch by one semitone from -12 to +12 (hold to repeat); you can also drag up / down or scroll over the "
+                 "display. With MIX mode off you only hear the transposed guitar, like a capo or a retuned instrument. At 0 the signal goes "
                  "straight through (no delay at all).",
-                 "Mode MIX éteint, seule la guitare transposée est entendue, comme avec un capodastre ou un instrument réaccordé. "
-                 "À 0, le signal passe directement (aucun retard).")))
+                 "Les flèches changent la transposition d'un demi-ton, de -12 à +12 (maintenir pour répéter) ; on peut aussi glisser vers le haut / bas "
+                 "ou utiliser la molette sur l'afficheur. Mode MIX éteint, seule la guitare transposée est entendue, comme avec un capodastre ou un "
+                 "instrument réaccordé. À 0, le signal passe directement (aucun retard).")))
     s.append(P(T('MIX mode', 'Mode MIX'), 'h2'))
-    s.append(P(T("MIX mode blends the shifted and the dry signal from 0 to 100 % (equal-power law: at 50 % both are at -3 dB). "
-                 "Low settings add an octave or a fifth under or over the riff; 100 % is the shifted signal alone. The dry part is "
-                 "never delayed, so the blend stays tight.",
-                 "Le mode MIX mélange signal transposé et signal direct de 0 à 100 % (loi à puissance constante : à 50 % les deux sont "
-                 "à -3 dB). Les réglages bas ajoutent une octave ou une quinte sous ou sur le riff ; 100 % = le signal transposé seul. "
-                 "La partie directe n'est jamais retardée : le mélange reste serré.")))
+    s.append(P(T("Click MIX to switch MIX mode on / off (blue dot above MIX in the display). MIX mode blends the shifted and the dry signal from "
+                 "0 to 100 % (equal-power law: at 50 % both are at -3 dB). Hold MIX for 0.6 s to adjust the mix with the arrows: the light ring and "
+                 "the MIX dot flash and the display shows the mix in %; click MIX again or wait 4 s to leave. Low settings add an octave or a fifth "
+                 "under or over the riff; 100 % is the shifted signal alone. The dry part is never delayed, so the blend stays tight.",
+                 "Un clic sur MIX active / coupe le mode MIX (point bleu au-dessus de MIX dans l'afficheur). Le mode MIX mélange signal transposé et "
+                 "signal direct de 0 à 100 % (loi à puissance constante : à 50 % les deux sont à -3 dB). Maintenez MIX 0,6 s pour régler le mix aux "
+                 "flèches : l'anneau lumineux et le point MIX clignotent et l'afficheur indique le mix en % ; recliquez sur MIX ou attendez 4 s pour "
+                 "sortir. Les réglages bas ajoutent une octave ou une quinte sous ou sur le riff ; 100 % = le signal transposé seul. La partie directe "
+                 "n'est jamais retardée : le mélange reste serré.")))
     s.append(P(T('FAV', 'FAV'), 'h2'))
-    s.append(P(T("One favourite memory, as on the pedal. Engaging FAV switches to the stored pitch, MIX mode and mix (FAV ON on the status line). "
-                 "Clicking FAV again returns to your previous setting. Moving an arrow while FAV is on starts from the FAV sound and "
-                 "leaves FAV. The FAV memory is saved with the project.",
-                 "Une mémoire favorite, comme sur la pédale. Activer FAV passe à la transposition, au mode MIX et au mix mémorisés "
-                 "(FAV ON sur la ligne d\'état). Recliquer sur FAV revient au réglage précédent. Toucher une flèche en FAV repart du son FAV et "
-                 "quitte FAV. La mémoire FAV est enregistrée avec le projet.")))
+    s.append(P(T("One favourite memory, as on the pedal. Click FAV to switch to the stored pitch, MIX mode and mix (FAV ON on the status line); "
+                 "click again to return to your previous setting. Hold FAV for 0.9 s to store the current sound as FAV (the display blinks). "
+                 "Moving an arrow while FAV is on starts from the FAV sound and leaves FAV. The FAV memory is saved with the project.",
+                 "Une mémoire favorite, comme sur la pédale. Un clic sur FAV passe à la transposition, au mode MIX et au mix mémorisés (FAV ON sur "
+                 "la ligne d'état) ; un nouveau clic revient au réglage précédent. Maintenez FAV 0,9 s pour mémoriser le son actuel (l'afficheur "
+                 "clignote). Toucher une flèche en FAV repart du son FAV et quitte FAV. La mémoire FAV est enregistrée avec le projet.")))
+    s.append(P(T('Preset menu', 'Menu des presets'), 'h2'))
+    s.append(P(T("The menu above the display recalls the factory presets (section 8), grouped by use. It shows \"Custom\" when the sound matches none of them.",
+                 "Le menu au-dessus de l'afficheur rappelle les presets d'usine (section 8), groupés par usage. Il affiche « Custom » quand le son ne correspond à aucun.")))
 
-    s.append(P(T('5. MIDI and expression pedals', '5. MIDI et pédales d\'expression'), 'h1'))
-    s.append(P(T("Every function is a host parameter (Effect On, Pitch, Mix Mode, Mix, FAV) and can be automated. For MIDI "
-                 "controllers such as the M-Vave Chocolate Plus, right-click a control and choose <b>MIDI Learn</b>, then move the "
-                 "controller: the status line confirms what is waiting for a CC.",
-                 "Toutes les fonctions sont des paramètres de l'hôte (Effect On, Pitch, Mix Mode, Mix, FAV) automatisables. Pour un "
-                 "contrôleur MIDI comme la M-Vave Chocolate Plus, clic droit sur une commande puis <b>MIDI Learn</b>, et bougez le "
-                 "contrôleur : la ligne d'état indique ce qui attend un CC.")))
-    rows = [[T('Right-click on', 'Clic droit sur'), T('Learnable targets', 'Cibles assignables'), T('Notes', 'Remarques')],
-            [T('Footswitch', 'Footswitch'), T('Footswitch (on / bypass)', 'Footswitch (marche / bypass)'),
-             T('Latching (CC >= 64 = on) or momentary (each press toggles).', 'À accrochage (CC >= 64 = marche) ou momentané (chaque appui bascule).')],
-            ['FAV', 'FAV', T('Momentary by default, like a non-latching switch on the FAV jack.', 'Momentané par défaut, comme un switch non verrouillable sur le jack FAV.')],
-            ['MIX', T('MIX mode; Mix (expression)', 'Mode MIX ; Mix (expression)'),
-             T('Moving the expression pedal also turns MIX mode on.', 'Bouger la pédale d\'expression active aussi le mode MIX.')],
-            [T('Arrows', 'Flèches'), T('-1 / +1 semitone', '-1 / +1 demi-ton'), T('Triggered when the CC goes over 64.', 'Déclenché quand le CC passe au-dessus de 64.')],
-            [T('Display', 'Afficheur'), T('Pitch (expression), arrows', 'Pitch (expression), flèches'),
-             T('Heel = -12, toe = +12.', 'Talon = -12, pointe = +12.')]]
-    s.append(table(rows, [30 * mm, 50 * mm, CW - 80 * mm]))
-    s.append(Spacer(1, 6))
-    s.append(P(T("Expression pedals are smooth: each new value is reached with a ramp lasting the time between two CC messages, "
-                 "then a 2-pole filter; 14-bit controllers (CC n + CC n+32) are supported. The pedal's travel is learned "
-                 "automatically, so 0 and 100 % are reached even if it only sends 2 to 116 (menu: <i>Reset expression pedal travel</i>).",
-                 "Les pédales d'expression sont sans saccades : chaque nouvelle valeur est atteinte par une rampe de la durée séparant "
-                 "deux messages CC, puis un filtre à 2 pôles ; les contrôleurs 14 bits (CC n + CC n+32) sont acceptés. La course de "
-                 "la pédale est apprise automatiquement : 0 et 100 % sont atteints même si elle n'envoie que 2 à 116 (menu : "
-                 "<i>Reset expression pedal travel</i>).")))
-
-    s.append(P(T('Window', 'Fenêtre'), 'h2'))
-    s.append(P(T("The window opens at 391 x 493 and cannot be made smaller. "
-                 "Drag the bottom-right corner to enlarge it (aspect ratio kept), or right-click the background: Default / 125 % / 150 % / 200 %.",
-                 "La fenêtre s'ouvre en 391 x 493 et ne peut pas être réduite. "
-                 "Tirez le coin inférieur droit pour l'agrandir (proportions conservées) ou clic droit sur le fond : Default / 125 % / 150 % / 200 %.")))
+    s.append(P(T('5. Footswitch, light ring and status line', "5. Footswitch, anneau lumineux et ligne d'état"), 'h1'))
+    for en, fr in [
+        ("<b>Footswitch</b>: effect on / bypass, toggles as soon as it is pressed. Buffered bypass with a 6 ms crossfade, click-free.",
+         "<b>Footswitch</b> : effet actif / bypass, bascule dès l'appui. Bypass bufférisé avec fondu de 6 ms, sans clic."),
+        ("<b>Light ring</b>: blue ring around the footswitch (colour of the display) with a bright light and a long glowing trail turning around it "
+         "(one turn in 1.6 s). Lit = effect on, off = bypass, flashing = mix adjust.",
+         "<b>Anneau lumineux</b> : anneau bleu autour du footswitch (couleur de l'afficheur) avec une lumière à longue traînée qui tourne (un tour "
+         "en 1,6 s). Allumé = effet actif, éteint = bypass, clignotant = réglage du mix."),
+        ("<b>Status line</b> (under the pedal): live values (pitch, mix %, MIX and FAV state, bypass), control hints on mouse-over and the MIDI Learn prompts.",
+         "<b>Ligne d'état</b> (sous la pédale) : valeurs en direct (transposition, mix en %, états MIX et FAV, bypass), aide au survol et invites du MIDI Learn."),
+    ]:
+        s.append(B(T(en, fr)))
 
     s.append(PageBreak())
-    s.append(P(T('6. Presets', '6. Presets'), 'h1'))
+    s.append(P(T('6. MIDI', '6. MIDI'), 'h1'))
+    s.append(P(T("Every function is a host parameter (Effect On, Pitch, Mix Mode, Mix, FAV) and can be automated. For MIDI controllers such as the "
+                 "M-Vave Chocolate Plus, every control has its own <b>MIDI Learn</b>. Semitones listens on every MIDI channel; nothing is assigned "
+                 "by default, so you choose your own CCs.",
+                 "Toutes les fonctions sont des paramètres de l'hôte (Effect On, Pitch, Mix Mode, Mix, FAV) automatisables. Pour un contrôleur MIDI "
+                 "comme la M-Vave Chocolate Plus, chaque commande a son propre <b>MIDI Learn</b>. Semitones écoute tous les canaux MIDI ; rien n'est "
+                 "assigné par défaut : vous choisissez vos CC.")))
+    for en, fr in [
+        ("<b>Right-click a control</b> and choose <b>MIDI Learn: &lt;control&gt; (CC n / none)</b>. MIX offers MIX mode and Mix (expression); the "
+         "display offers Pitch (expression) and the two arrows.",
+         "<b>Clic droit sur une commande</b> puis <b>MIDI Learn: &lt;commande&gt; (CC n / none)</b>. MIX propose le mode MIX et le Mix (expression) ; "
+         "l'afficheur propose Pitch (expression) et les deux flèches."),
+        ("The status line shows <b>MIDI LEARN: move a control for X</b>. Move a pedal or press a footswitch: the first CC received is assigned and "
+         "the status line confirms <b>X = CC n</b> for 2 seconds. CC 32-63 (14-bit LSB) and 120-127 (channel mode) are never learned.",
+         "La ligne d'état affiche <b>MIDI LEARN: move a control for X</b>. Bougez une pédale ou appuyez sur un footswitch : le premier CC reçu est "
+         "assigné et la ligne d'état confirme <b>X = CC n</b> pendant 2 secondes. Les CC 32-63 (LSB 14 bits) et 120-127 (mode de canal) ne sont jamais pris."),
+        ("<b>Clear MIDI: &lt;control&gt;</b> removes the assignment; <b>Cancel MIDI learn</b> (or choosing the same Learn again) stops waiting.",
+         "<b>Clear MIDI: &lt;commande&gt;</b> retire l'assignation ; <b>Cancel MIDI learn</b> (ou rechoisir le même Learn) arrête l'attente."),
+        ("Switches: <i>Latching switch (CC &gt;= 64 = on)</i> or <i>Momentary switch (each press toggles)</i>, chosen in the same menu. "
+         "Expression pedals: <i>Reset expression pedal travel</i>.",
+         "Switchs : <i>Latching switch (CC &gt;= 64 = on)</i> ou <i>Momentary switch (each press toggles)</i>, au choix dans le même menu. "
+         "Pédales d'expression : <i>Reset expression pedal travel</i>."),
+        ("Right-click the background &gt; <b>MIDI</b>: <i>Learn</i> for every control with its current CC and <b>Reset MIDI to defaults (nothing assigned)</b>.",
+         "Clic droit sur le fond &gt; <b>MIDI</b> : <i>Learn</i> de chaque commande avec son CC actuel et <b>Reset MIDI to defaults (nothing assigned)</b>."),
+        ("Assignments, switch types and learned pedal travel are saved with the project.",
+         "Assignations, types de switch et course de pédale apprise sont enregistrés avec le projet."),
+    ]:
+        s.append(B(T(en, fr)))
+    s.append(Spacer(1, 5))
+    rows = [[T('Control (MIDI Learn name)', 'Commande (nom du MIDI Learn)'), T('Default CC', 'CC par défaut'), 'Type'],
+            [T('Footswitch (on / bypass)', 'Footswitch (on / bypass)'), T('none', 'aucun'), T('Footswitch, latching by default (CC &gt;= 64 = on) or momentary (each press toggles).', 'Footswitch, à accrochage par défaut (CC &gt;= 64 = marche) ou momentané (chaque appui bascule).')],
+            ['FAV', T('none', 'aucun'), T('Footswitch, momentary by default (like a non-latching switch on the FAV jack) or latching.', 'Footswitch, momentané par défaut (comme un switch non verrouillable sur le jack FAV) ou à accrochage.')],
+            ['MIX mode', T('none', 'aucun'), T('Switch, latching by default or momentary.', 'Bascule, à accrochage par défaut ou momentanée.')],
+            ['Right arrow (+1 st)', T('none', 'aucun'), T('Trigger: +1 semitone each time the CC goes over 64.', 'Déclencheur : +1 demi-ton à chaque passage du CC au-dessus de 64.')],
+            ['Left arrow (-1 st)', T('none', 'aucun'), T('Trigger: -1 semitone each time the CC goes over 64.', 'Déclencheur : -1 demi-ton à chaque passage du CC au-dessus de 64.')],
+            ['Pitch (expression)', T('none', 'aucun'), T('Continuous, 25 steps: heel = -12, toe = +12 (14-bit accepted).', 'Continu, 25 pas : talon = -12, pointe = +12 (14 bits accepté).')],
+            ['Mix (expression)', T('none', 'aucun'), T('Continuous 0-100 %; moving it also turns MIX mode on (14-bit accepted).', 'Continu 0-100 % ; le bouger active aussi le mode MIX (14 bits accepté).')]]
+    s.append(table(rows, [46 * mm, 22 * mm, CW - 68 * mm]))
+    s.append(Spacer(1, 6))
+    s.append(P(T("Expression pedals are smooth: each new value is reached with a ramp lasting the time between two CC messages, then a 2-pole filter; "
+                 "14-bit controllers (CC n + CC n+32) are supported. The pedal's travel is learned automatically, so 0 and 100 % are reached even if "
+                 "it only sends 2 to 116.",
+                 "Les pédales d'expression sont sans saccades : chaque nouvelle valeur est atteinte par une rampe de la durée séparant deux messages "
+                 "CC, puis un filtre à 2 pôles ; les contrôleurs 14 bits (CC n + CC n+32) sont acceptés. La course de la pédale est apprise "
+                 "automatiquement : 0 et 100 % sont atteints même si elle n'envoie que 2 à 116.")))
+
+    s.append(P(T('7. Window', '7. Fenêtre'), 'h1'))
+    s.append(P(T("Right-click anywhere &gt; <b>Window size</b>: <b>60 % (default)</b>, <b>75 %</b>, <b>100 %</b>, like the other Studio Wiga pedals. "
+                 "The window opens at the default size and can never be made smaller; you can also drag the bottom-right corner to enlarge it "
+                 "(aspect ratio kept).",
+                 "Clic droit n'importe où &gt; <b>Window size</b> : <b>60 % (default)</b>, <b>75 %</b>, <b>100 %</b>, comme les autres pédales Studio "
+                 "Wiga. La fenêtre s'ouvre à la taille par défaut et ne peut jamais être plus petite ; on peut aussi tirer le coin inférieur droit "
+                 "pour l'agrandir (proportions conservées).")))
+    s.append(PageBreak())
+    s.append(P(T('8. Presets', '8. Presets'), 'h1'))
     rows = [[T('Preset', 'Preset'), T('Pitch', 'Transp.'), 'MIX', T('Use', 'Usage')]]
     rows += [[n, p, m, T(en, fr)] for n, p, m, en, fr in PRESETS]
     s.append(table(rows, [58 * mm, 18 * mm, 14 * mm, CW - 90 * mm]))
 
-    s.append(P(T('7. Tips', '7. Conseils'), 'h1'))
+    s.append(P(T('9. Tips', '9. Conseils'), 'h1'))
     s.append(B(T("Place Semitones <b>first</b> in the Reaper chain, before drives and before Two Notes Genome: the shifter tracks a "
                  "clean guitar best, and the amp then reacts naturally to the transposed signal.",
                  "Placez Semitones <b>en premier</b> dans la chaîne Reaper, avant les saturations et avant Two Notes Genome : le "
@@ -310,7 +385,7 @@ def part(lang):
     s.append(B(T("Mix around 30 % with -12 gives the fast octaver sound of the pedal's MIX mode; +12 at 30 % adds a 12-string shimmer.",
                  "Un mix vers 30 % à -12 donne l'octaver rapide du mode MIX de la pédale ; +12 à 30 % ajoute une brillance de 12 cordes.")))
 
-    s.append(KeepTogether([P(T('8. Specifications', '8. Caractéristiques techniques'), 'h1'), table([
+    s.append(KeepTogether([P(T('10. Specifications', '10. Caractéristiques techniques'), 'h1'), table([
         [T('Item', 'Élément'), T('Value', 'Valeur')],
         [T('Format', 'Format'), 'VST3 - Windows 10 / 11 (x64), macOS 10.13+ (Apple Silicon + Intel)'],
         [T('Original pedal', "Pédale d'origine"), 'Solar Guitars CHUG Capo (low latency professional pitch pedal)'],
@@ -322,9 +397,11 @@ def part(lang):
         [T('Channels', 'Canaux'), T('mono or stereo in, mono or stereo out', 'entrée mono ou stéréo, sortie mono ou stéréo')],
         [T('Sample rates', "Fréquences d'échantillonnage"), '44.1 ... 192 kHz'],
         ['Bypass', T('buffered, 6 ms crossfade', 'bufférisé, fondu de 6 ms')],
-        ['MIDI', T('MIDI learn on every control, latching / momentary switches, 14-bit CC, learned pedal travel',
-                    'MIDI learn sur chaque commande, switchs à accrochage / momentanés, CC 14 bits, course de pédale apprise')],
-        [T('Window', 'Fenêtre'), T('391 x 493 default (minimum), resizable up to 200 %', '391 x 493 par défaut (minimum), redimensionnable jusqu\'à 200 %')],
+        ['MIDI', T('MIDI Learn on every control (nothing assigned by default), omni, latching / momentary switches, 14-bit CC, learned pedal travel; saved with the project',
+                    'MIDI Learn sur chaque commande (rien d\'assigné par défaut), omni, switchs à accrochage / momentanés, CC 14 bits, course de pédale apprise ; enregistré avec le projet')],
+        [T('Window', 'Fenêtre'), T('60 % (default, minimum), 75 %, 100 %; corner resize', '60 % (défaut, minimum), 75 %, 100 % ; redimensionnement par le coin')],
+        [T('Windows stability', 'Stabilité Windows'), T('anti-freeze v2: the audio thread never calls the host, window refresh driven by a timer with a watchdog',
+                    "anti-gel v2 : le thread audio n'appelle jamais l'hôte, rafraîchissement de la fenêtre piloté par un timer avec chien de garde")],
     ], [42 * mm, CW - 42 * mm])]))
     return s
 
